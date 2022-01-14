@@ -133,31 +133,31 @@ def bufr_encode(ibufr, subs):
     codes_set(ibufr, 'observedData', 1)
     codes_set(ibufr, 'numberOfSubsets', subs.NSUB)       
     codes_set(ibufr, 'compressedData', 0)
-    codes_set(ibufr, 'typicalYear', int(subs.YYYY[0]))  
-    codes_set(ibufr, 'typicalMonth', int(subs.MM[0]))    
-    codes_set(ibufr, 'typicalDay', int(subs.DD[0]))      
-    codes_set(ibufr, 'typicalHour', int(subs.HH24[0]))   
-    codes_set(ibufr, 'typicalMinute', int(subs.MI[0]))   
+    codes_set(ibufr, 'typicalYear', subs.YYYY[0])  
+    codes_set(ibufr, 'typicalMonth', subs.MM[0])    
+    codes_set(ibufr, 'typicalDay', subs.DD[0])      
+    codes_set(ibufr, 'typicalHour', subs.HH24[0])   
+    codes_set(ibufr, 'typicalMinute', subs.MI[0])   
     codes_set(ibufr, 'typicalSecond', 0)                  
     
-    codes_set_array(ibufr, 'inputExtendedDelayedDescriptorReplicationFactor', subs.EXDESC)
-        #codes_set_array(ibufr, 'inputDelayedDescriptorReplicationFactor', delayedDesc)
+    codes_set_array(ibufr, 'inputDelayedDescriptorReplicationFactor', subs.DELAYED)
+    codes_set(ibufr, 'unexpandedDescriptors', 307080)
+
     # 307080: 301090, 302031, 302035, 302036, 302047, 8002, 302048,
     #         302037, 302043, 302044, 101002, 302045, 302046
         # 302035: 302032, 302033, 302034, 7032, 302004, 101000, 31001, 302005
         # 302036: 105000, 31001, 8002, 20011, 20012, 20014, 20017
         # 302043: 302038, 101002, 302039, 302040, 302041, 302042, 7032
-    
-    ivalues = (301090, 302031,
-        302032, 302033, 302034, 7032, 302004, 101000, 31002, 302005,
-        105000, 31002, 8002, 20011, 20012, 20014, 20017,
-        302047, 8002, 302048, 302037,
-        302038, 101002, 302039, 302040, 302041, 302042, 7032,
-        302044, 101002, 302045,
-        302046)
-    codes_set_array(ibufr, 'unexpandedDescriptors', ivalues)
-
-    codes_set(ibufr, 'unpack', 1)
+    # If 301001 doesn't work:
+        # codes_set_array(ibufr, 'inputExtendedDelayedDescriptorReplicationFactor', subs.EXDESC)
+        #ivalues = (301090, 302031,
+        #    302032, 302033, 302034, 7032, 302004, 101000, 31001, 302005,
+        #    105000, 31001, 8002, 20011, 20012, 20014, 20017,
+        #    302047, 8002, 302048, 302037,
+        #    302038, 101002, 302039, 302040, 302041, 302042, 7032,
+        #    302044, 101002, 302045,
+        #    302046)
+        #codes_set_array(ibufr, 'unexpandedDescriptors', ivalues)
 
     # Surface station identification; time, horizontal and vertical coordinates
     # 301090: 301004, 301011, 301012, 301021, 7030, 7031
@@ -206,9 +206,9 @@ def bufr_encode(ibufr, subs):
     codes_set_array(ibufr, 'characteristicOfPressureTendency', subs.P_A)    # 10063
 
     # Not included in the data:
-        # codes_set_array(ibufr, '24HourPressureChange')                        # 10062
-        # codes_set_array(ibufr, 'pressure', )                                  # 7004    
-        # 'nonCoordinateGeopotentialHeight'                                     # 10009
+        # '24HourPressureChange'                 # 10062
+        # 'pressure'                             # 7004    
+        # 'nonCoordinateGeopotentialHeight'      # 10009
 
     # Basic synoptic “instantaneous” data       (31001 -> 31002)
     # 302035: 302032, 302033, 302034, 7032, 302004, 101000, 31001, 302005
@@ -220,7 +220,7 @@ def bufr_encode(ibufr, subs):
 
         # Temperature and humidity data
         # 302032: 7032, 12101, 12103, 13003
-            # Height of sensor above local ground  # hs1 F77 -> 2.0 me kaytetaan ELTERM, se on useimiten 2
+            # Height of sensor above local ground F77 -> 2.0
             # Temperature/air temperature
             # Dewpoint temperature
             # Relative humidity
@@ -234,7 +234,7 @@ def bufr_encode(ibufr, subs):
         # 302033: 7032, 2001
             # Height of sensor above local ground
             # Horizontal visibility
-   
+
     codes_set_array(ibufr, 'horizontalVisibility', subs.VIS)        # 2001
 
         # Precipitation past 24 hours
@@ -373,7 +373,7 @@ def bufr_encode(ibufr, subs):
             # Time period or displacement (in minutes)          # F77 -> -10 and -60
             # Maximum wind gust direction                    
             # Maximum wind gust speed                   
-    codes_set_array(ibufr,'instrumentationForWindMeasurement', subs.INSTRUMENT)
+    codes_set_array(ibufr, 'instrumentationForWindMeasurement', subs.INSTRUMENT)
     codes_set_array(ibufr, 'timeSignificance', subs.TIME_SIGNIFICANCE)
     codes_set_array(ibufr, 'windDirection', subs.WD_10MIN)
     codes_set_array(ibufr, 'windSpeed', subs.WS_10MIN)
@@ -410,7 +410,6 @@ def bufr_encode(ibufr, subs):
 
     
     codes_set(ibufr, 'pack', 1)  # Required to encode the keys back in the data section
-
 
 #############################################################################
 # Main gets input and output files from command line and sends them to      # 

@@ -9,7 +9,6 @@ class Subset:
         self.ELBARO = str2float(value_array[2], 2)                                
         self.ELSTAT = str2float(value_array[3], 3)                               
         self.ELTERM = str2float(value_array[4], 4)                                 
-        self.HEIGHT_OF_SENSOR = totalListOfHeightOfSensor(self.ELANEM, self.ELTERM)
         self.LAT = str2float(value_array[5], 5)
         self.LON = str2float(value_array[6], 6)
         self.STATION_NAME = value_array[7]
@@ -34,8 +33,8 @@ class Subset:
         self.CLHB5 = str2float(value_array[19], 19)
         self.NREP1 = numberOfRepetition(self.CLA2, self.CLA3, self.CLA4, self.CLA5)
         self.NREP2 = numberOfRepetition2(self.NSUB)                                
-        self.EXDESC = extendedDelaye(self.NSUB, self.NREP1, self.NREP2)  
-        self.TIME_PERIOD = timePeriod(self.NSUB)                                    
+        self.DELAYED = replication(self.NSUB, self.NREP1, self.NREP2)  
+                                   
         self.VS_TOTAL = totalListOfVerticalSignificance(1, self.NREP1, self.NREP2, self.VS, self.N_CALC, self.CLA2, self.CLA3, self.CLA4, self.CLA5)
         self.CLA_TOTAL = totalListOfCloudAmount(self.NH_CALC, self.CLA2, self.CLA3, self.CLA4, self.CLA5)
         self.CLOUD_TYPE_TOTAL = totalListOfCloudType(self.NREP1, self.NREP2, self.CL, self.CM, self.CH)
@@ -57,6 +56,7 @@ class Subset:
         self.R_1H_AWS = str2float(value_array[38], 38)
         self.R_1H_MAN = str2float(value_array[39], 39)
         self.PRECIPITATION = totalPrecipitation(self.STATION_TYPE, self.R_12H_MAN, self.R_1H_MAN, self.R_12H_AWS, self.R_1H_AWS) 
+        self.PRECIPITATION_TIME_PERIOD = timePeriodForPrecipitation(self.PRECIPITATION)
         self.R_24H = str2float(value_array[40], 40)
         self.R_24H_TOTAL = totalListOfR24H(self.HH24, self.R_24H) 
         self.SNOW06 = str2float(value_array[41], 41)
@@ -73,12 +73,14 @@ class Subset:
         self.TMIN18 = str2float(value_array[51], 51)
         self.TMAX = temperature(self.HH24, self.TMAX06, self.TMAX18)
         self.TMIN = temperature(self.HH24, self.TMIN06, self.TMIN18)
+        self.HEIGHT_OF_SENSOR = totalListOfHeightOfSensor(self.ELANEM, self.ELTERM, self.TMAX, self.TMIN)
         self.INSTRUMENT = typeOfInstrument(self.NSUB)
         self.TIME_SIGNIFICANCE = timeSignificance(self.NSUB)
         self.VALUE_COUNT = value_array[52]
         self.VIS = str2int(value_array[53], 53)
         self.W1_CALC = str2int(value_array[54], 54)   
         self.W2_CALC = str2int(value_array[55], 55)   
+        self.TIME_PERIOD = timePeriod(self.NSUB, self.HH24, self.W1_CALC, self.PRECIPITATION_TIME_PERIOD, self.TMAX, self.TMIN) 
         self.WD_10MIN = str2float(value_array[56], 56)  
         self.WG_10MIN = str2float(value_array[57], 57)  
         self.WG_1H_MAX = str2float(value_array[58], 58)  
@@ -321,30 +323,36 @@ def totalListOfHeightOfBase(n_list, clist2, clist3, clist4, clist5, NREP1_list, 
                         float_list.append(hlist5[i])                       
     return float_list
 
-def totalListOfHeightOfSensor(elanem_list, elterm_list):
+def totalListOfHeightOfSensor(elanem_list, elterm_list, tmax_list, tmin_list):
+    # This function makes a list of all the height of sensor values:
+        # 302035: 302032: for temperature and humidity measurement j = 0
+        # 302035: 302033: for visibility measurement j = 1
+        # 302035: 302034: for precipitation measurement j = 2
+        # 302035: j = 3
+        # 302043: 302040: for precipitation measurement j = 4
+        # 302043: 302041: for temperature measurement j = 5 
+        # 302043: 302042: for wind measurement j = 6
+        # 302043: j = 7
     float_list = []
     miss = CODES_MISSING_DOUBLE
     for i in range(0, len(elanem_list)):
+        tmax = tmax_list[i]
+        tmin = tmin_list[i]
         for j in range(0, 8):
-            if (j == 0):                            # 302035: 302032: for temperature and humidity measurement
+            if (j == 0):                            
                 float_list.append(2.0)          
-            elif (j == 5):                          # 302043: 302041: for temperature measurement
-                #float_list.append(elterm_list[i]) ??
-                float_list.append(2.00)
-            elif (j == 6):                          # 302043: 302042: for wind measurement
-                float_list.append(elanem_list[i])                     
+            elif (j == 5):                          
+                if (tmax == miss or tmin == miss):
+                    float_list.append(miss)
+                else:
+                    float_list.append(2.00)
+            elif (j == 6):                          
+                float_list.append(elanem_list[i])  
+                    # F77 must have a mistake with this, since there:
+                    # in sub 3 this is 15, not miss
+                    # and in subs 16, 21 ja 26 this 12, not miss .                  
             else:
-                float_list.append(miss)
-                    # j = 1: 302035: 302033: for visibility measurement
-                        # f77 ei aseta mitaan data(25)
-                    # j = 2: 302035: 302034: for precipitation measurement
-                        # f77 ei aseta mitaan data(27)
-                    # j = 3: 302035: set to missing to cancel the previous value
-                        # f77 ei aseta mitaan data(29)
-                    # j = 4: 302043: 302040: for precipitation measurement
-                        # f77 ei aseta mitaan
-                    # j = 7: 302043: set to missing to cancel the previous value
-                        # f77 ei aseta mitaan data(72 + eps)    
+                float_list.append(miss)   
     return float_list
 
 def totalListOfR24H(HH24_list, R24H_list):
@@ -368,7 +376,7 @@ def totalListOfSnowDepth(HH24_list, SNOW06_list, SNOW18_list, SNOW_AWS_list):
             float_list.append(SNOW_AWS_list[i])
     return float_list
 
-def extendedDelaye(ns, NREP1_list, NREP2_list):
+def replication(ns, NREP1_list, NREP2_list):
     int_list = []
     for i in range(0, ns):
         int_list.append(NREP1_list[i])      # 302005
@@ -406,36 +414,72 @@ def numberOfRepetition2(ns):
         int_list.append(0)
     return int_list
 
-def timePeriod(ns):
-    # This gives still wrong values
+def timePeriodForPrecipitation(totalR_H_list):
     int_list = []
     miss = CODES_MISSING_LONG
+    missD = CODES_MISSING_DOUBLE
+    for i in range (0, len(totalR_H_list)):
+        if (totalR_H_list[i] == missD):
+            int_list.append(miss)
+        elif (i % 2):
+            int_list.append(-1)
+        else:
+            int_list.append(-12)
+    return int_list
+
+def timePeriod(ns, hh_list, w1_list, tp_list, tmax_list, tmin_list):
+    # This funkction gives all the time period values:
+        # 302038 [h] j = 0
+        # 302039 [h] j = 1 and 2
+        # 302040 [h] j = 3 and 4 
+        # 302041 [h] j = 5, 6, 7 and 8
+        # 302042 [min] j = 9, 10 and 11
+        # 302044 [h] j = 12
+        # 302045 [h] j = 13 and 14
+        # 302046 [h] j = 15 and 16
+    int_list = []
+    miss = CODES_MISSING_LONG
+    missD = CODES_MISSING_DOUBLE
+    t = 0
     for i in range (0, ns):
+        tmax = tmax_list[i]
+        tmin = tmin_list[i]
         for j in range (0, 17):
-            if (j == 9 or j == 10):
+            if (j == 0):
+                if (w1_list[i] != 31):
+                    h = [0, 5, 6, 11, 12, 17, 18, 23]
+                    if (hh_list[i] in h):
+                        int_list.append(-6)
+                    else:
+                        int_list.append(-3)
+                else:
+                    int_list.append(miss)           
+            elif (j == 9 or j == 10):
                 int_list.append(-10)
-                    # 302042 j = 9 ja 10 [min] -> -10
             elif (j == 11):
                 int_list.append(-60)
-                    # 302042 j = 11 [min] -> -60
-            elif (j == 3 or j == 5 or j == 7):
-                int_list.append(-12)
-                    # 302040 j = 3 [h] -> -12
-                    # 302041 j = 5 ja j = 7 [h] -> -12
+            elif (j == 3):
+                int_list.append(tp_list[t])
+                t = t + 1
+            elif (j == 5 or j == 7):
+                if (j == 5 and tmax == missD):
+                    int_list.append(miss)
+                elif (j == 7 and tmin == missD):
+                    int_list.append(miss)
+                else:
+                    int_list.append(-12)
             elif (j == 6 or j == 8):          
-                int_list.append(0)
-                    # 302041 j = 6 ja j = 6 [h] -> 0 (see Note)
+                if (j == 6 and tmax == missD):
+                    int_list.append(miss)
+                elif (j == 8 and tmin == missD):
+                    int_list.append(miss)
+                else:
+                    int_list.append(0)
             elif (j == 4):
-                int_list.append(-1)  
-                    # 302040 j = 4 [h] -> -1
+                int_list.append(tp_list[t])
+                t = t + 1 
             else:
-                int_list.append(miss)
-                    # 302038 j = 0 [h] -> miss
-                    # 302039 j = 1 ja j = 2 [h] -> miss
-                    # 302044 j = 12 [h] -> miss
-                    # 302045 j = 13 ja j = 14 [h] -> miss
-                    # 302046 j = 15 ja j = 16 [h] -> miss
-
+                int_list.append(miss)     
     return int_list
 
 def typeOfInstrument(ns):
