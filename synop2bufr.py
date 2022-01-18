@@ -96,8 +96,8 @@ def message_encoding(input_filename, output_filename):
         for s in range(0,len(values)):
             sub_array[s].append(values[s])
 
-    subset_array = subA.Subset(sub_array)
-
+    subset_array = subA.Subset(keys_in_each_row[0], sub_array)
+    
     # 3.
        #* Bufr message made from sample. (If many messages loop needs to be added.)
        #* Output file is oppened.
