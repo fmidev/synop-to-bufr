@@ -1,11 +1,22 @@
 from eccodes import *
 
+##############################################################################
+# This Subset class makes keyname objects with keynames that are             #
+# mostly used in synop data.                                                 #
+# All the values with same keyname are placed into  same object as an array. #
+# The values are modified in different functions according to Codes manual.  #
+##############################################################################
 class Subset:
 
+    #########################################################
+    # 1. At first Subset class makes all the values         #
+    #    which are not dependent on any other objects       #
+    #    to be missing. Only the number of subsets (NSUB)   #  
+    #    is given.                                          #
+    #########################################################
     def __init__(self, key_array, value_array):
         
         self.NSUB = len(value_array[0])
-        self.NREP2 = numberOfRepetition2(self.NSUB)
         miss_list = []
         for m in range(0, self.NSUB):
             miss_list.append('-1e+100')
@@ -67,6 +78,13 @@ class Subset:
         self.WW_CALC = str2int(miss_list, 62)   
         self.YYYY = str2int(miss_list, 63)
        
+       ######################################################################
+       # 2. The values are read form value_array, and value is              #
+       #    placed in keyname object acording keyname's index position.     #
+       #    Values that don't depend on any other objects are given first   #
+       #    (as and exception, block number and sation number are given     #
+       #    acording to WMO).                                               #
+       ######################################################################  
         for key in key_array:
             if (key == 'TTAAII'):                                                
                 self.TTAAII = value_array[key_array.index(key)]
@@ -183,6 +201,9 @@ class Subset:
             elif (key == 'YYYY'):                                                 
                 self.YYYY = str2int(value_array[key_array.index(key)], 63)
 
+        #######################################################################
+        # 3. Values that depend only on N_CALC (cloud cover total) are given. #
+        #######################################################################
         for key in key_array:    
             if (key == 'NH_CALC'):
                 self.NH_CALC = str2intForCloudAmount(self.N_CALC, value_array[key_array.index(key)], 28) 
@@ -201,13 +222,18 @@ class Subset:
             elif (key == 'CLA5'):                                                 
                 self.CLA5 = str2intForCloudAmount(self.N_CALC, value_array[key_array.index(key)], 15)
         
+        ##################################################################
+        # 4. The rest of the values are given to get all the values that # 
+        #    bufr message (with descriptor 307080) needs.                #
+        ##################################################################
         self.VS = verticalSignificance(self.N_CALC, self.NH_CALC, self.CL, self.CM)         
         self.NREP1 = numberOfRepetition(self.CLA2, self.CLA3, self.CLA4, self.CLA5)
+        self.NREP2 = numberOfRepetition2(self.NSUB)
         self.DELAYED = replication(self.NSUB, self.NREP1, self.NREP2)
         self.CLOUD_TYPE_TOTAL = totalListOfCloudType(self.NREP1, self.NREP2, self.CL, self.CM, self.CH)
         self.HB_TOTAL = totalListOfHeightOfBase(self.N_CALC, self.CLA2, self.CLA3, self.CLA4, self.CLA5, self.NREP1, self.HH_CALC, self.CLHB2, self.CLHB3, self.CLHB4, self.CLHB5)
-        self.CLA_TOTAL = totalListOfCloudAmount(self.NH_CALC, self.CLA2, self.CLA3, self.CLA4, self.CLA5)
-        self.VS_TOTAL = totalListOfVerticalSignificance(1, self.NREP1, self.NREP2, self.VS, self.N_CALC, self.CLA2, self.CLA3, self.CLA4, self.CLA5)
+        self.CLA_TOTAL = totalListOfCloudAmount(self.NREP2, self.NH_CALC, self.CLA2, self.CLA3, self.CLA4, self.CLA5)
+        self.VS_TOTAL = totalListOfVerticalSignificance(1, self.NREP1, self.NREP2, self.VS, self.CLA2, self.CLA3, self.CLA4, self.CLA5)
         self.PRECIPITATION = totalPrecipitation(self.STATION_TYPE, self.R_12H_MAN, self.R_1H_MAN, self.R_12H_AWS, self.R_1H_AWS)                                                
         self.PRECIPITATION_TIME_PERIOD = timePeriodForPrecipitation(self.PRECIPITATION)
         self.R_24H_TOTAL = totalListOfR24H(self.HH24, self.R_24H) 
@@ -221,9 +247,19 @@ class Subset:
         self.TIME_PERIOD = timePeriod(self.NSUB, self.HH24, self.W1_CALC, self.PRECIPITATION_TIME_PERIOD, self.TMAX, self.TMIN) 
         self.WGD_MAX = windGustDirection(self.NSUB)                                                 
         self.WGS_MAX = windGustSpeed(self.WG_10MIN, self.WG_1H_MAX)
-                                               
+
+#####################################################
+# Functions which are used to give the right values #
+# to bufr message are placed below.                 #
+#####################################################
+
 def verticalSignificance(n_list, nh_list, CL_list, CM_list):
-    # This function calculates vertical significance 8002 for sequence 302004
+    # This function calculates vertical significance 8002 for sequence 302004.
+        # Vertical significance depends on:
+            # n_list = N_CALC = cloud cover total
+            # nh_list = NH_CALC = cloud amount
+            # CL_list = CL = cloud type (low clouds)
+            # CM_list = CM = cloud type (middle clouds)
     int_list = []
     miss = CODES_MISSING_LONG
     for i in range (0, len(n_list)):
@@ -243,19 +279,36 @@ def verticalSignificance(n_list, nh_list, CL_list, CM_list):
             int_list.append(miss)
     return int_list
 
-def totalListOfVerticalSignificance(aws, NREP1_list, NREP2_list, VS_list, n_list , c2list, c3list, c4list, c5list): 
-    # This fnction makes a total list of vertical significance in 307080
+def totalListOfVerticalSignificance(aws, NREP1_list, NREP2_list, VS_list , c2list, c3list, c4list, c5list): 
+    # This function makes a total list of vertical significance in 307080
+        # 302004: These vertical significance values are made in 
+        #         function verticalSignificance
+        # 302005: Here vertical significance depens on:
+            # NREP1_list = NREP1 = number of repetitions of sequance 302005
+            # aws = is stations an automatic station or manual station
+            # c2list = CLA2 = cloud amount in cloud layer 2
+            # c3list = CLA3 = cloud amount in cloud layer 3
+            # c4list = CLA4 = cloud amount in cloud layer 4
+            # c5list = CLA5 = cloud amount in cloud layer 5
+        # 302036: Number of vertical significance depends on the 
+            # NREP2_list = NREP2 = number of cloud layers with bases
+            # below station mlevel shall be always set to zero in
+            # reports from a station at which observations of clouds
+            # with bases below station level are not executed.
+        # 302047: This information is required from land stations mainly
+        #         in the tropics. 
+        # 8002: set to missing to cancel the previous value.
     int_list = []
     miss = CODES_MISSING_LONG
     for i in range (0, len(VS_list)):
         w = 5 + NREP1_list[i] + NREP2_list[i]              
         for j in range(0, w):
-            if (j == 0):                                         # 302004
+            if (j == 0):                             # 302004
                 int_list.append(VS_list[i])
-            elif (j > 0 and j <= NREP1_list[i]):                # 302005               
-                if (aws == 0):                                   # manual station
+            elif (j > 0 and j <= NREP1_list[i]):     # 302005               
+                if (aws == 0):                       # manual station
                     int_list.append(j)
-                else:                                            # automatic station
+                else:                                # automatic station
                     if (NREP1_list[i] == 1 and c2list[i] == miss):
                         int_list.append(miss)
                     elif (NREP1_list[i] == 2 and c3list[i] == miss):
@@ -266,16 +319,27 @@ def totalListOfVerticalSignificance(aws, NREP1_list, NREP2_list, VS_list, n_list
                         int_list.append(miss)
                     else:
                         int_list.append(20 + j)
-            else:                                               # 302036, 302047 and 8002
+            else:                                     # 302036, 302047 and 8002
                 int_list.append(miss)                           
     return int_list
 
-def totalListOfCloudAmount(list1, list2, list3, list4, list5):
-    # This funtion makes a total list of cloud amont:
+def totalListOfCloudAmount(NREP2_list, list1, list2, list3, list4, list5):
+    # This funtion makes a total list of cloud amount:
+        # 302004: depends on list1 = NH_CALC = cloud amount.
+        # 302005: depends on:
+            # list2 = CLA2 = cloud amount in cloud layer 2.
+            # list3 = CLA3 = cloud amount in cloud layer 3.
+            # list5 = CLA4 = cloud amount in cloud layer 4.
+            # list5 = CLA5 = cloud amount in cloud layer 5.
+        # 302036: Number of cloud amount depends on the 
+            # NREP2_list = NREP2 = number of cloud layers with bases
+            # below station mlevel shall be always set to zero in
+            # reports from a station at which observations of clouds
+            # with bases below station level are not executed.
     int_list = []
     miss = CODES_MISSING_LONG
     for i in range (0, len(list1)):
-        for j in range (0, 5):
+        for j in range (0, 5 + NREP2_list[i]):
             if (j == 0):                              # 302004
                 int_list.append(list1[i])
             elif (j == 1):                            # 302005
@@ -297,7 +361,9 @@ def totalListOfCloudAmount(list1, list2, list3, list4, list5):
                 if (list5[i] == 0):
                     int_list.append(miss)
                 else:
-                    int_list.append(list5[i])       
+                    int_list.append(list5[i])
+            elif (j > 5):                             # 302036
+                int_list.append(miss)     
     return int_list
 
 def typeOfcloud(n_list, str_list, x):
@@ -349,6 +415,18 @@ def typeOfcloud(n_list, str_list, x):
 
 def totalListOfCloudType(NREP1_list, NREP2_list, CL_list, CM_list, CH_list):
     # This function makes the whole list of cloud types:
+        # 302004: depends on:
+            # CL_list = CL = cloud type (low cloud)
+            # CM_list = CM = cloud type (middle cloud)
+            # CH_list = CH = cloud type (high cloud)
+        # 302005: depens on:
+            # NREP1_list = NREP1 = number of repetitions of sequance 302005
+        # 302036: Number of cloud types depends on the 
+            # NREP2_list = NREP2 = number of cloud layers with bases
+            # below station mlevel shall be always set to zero in
+            # reports from a station at which observations of clouds
+            # with bases below station level are not executed.
+        # 302048: given if value of cloud type is given for cloud elevation
     int_list = []
     for i in range(0, len(CL_list)):
         k = 4 + NREP1_list[i] + NREP2_list[i]   # If NREP2 == 0 then there is 0 repetition of sequance 302036
@@ -364,6 +442,13 @@ def totalListOfCloudType(NREP1_list, NREP2_list, CL_list, CM_list, CH_list):
     return int_list
 
 def numberOfRepetition(list2, list3, list4, list5):
+    # Number of repetition in sequance 302005.
+    # Depends on: given cloud amount values in each layer:
+        # list2 = CLA2 = cloud amount in cloud layer 2.
+        # list3 = CLA3 = cloud amount in cloud layer 3.
+        # list4 = CLA4 = cloud amount in cloud layer 4.
+        # list5 = CLA5 = cloud amount in cloud layer 5.
+
     int_list = []
     miss = CODES_MISSING_LONG
     for i in range(0, len(list2)):
@@ -383,6 +468,15 @@ def numberOfRepetition(list2, list3, list4, list5):
     return int_list
 
 def str2intForCloudAmount(n_list, str_list, x):
+    # This function converts cloud amount data from string to integer
+    # before the total list of cloud amount is made.
+    # 302004: x = 28, the integer value depends on:
+        # n_list = N_CALC = cloud cover total
+        # values in data 
+    # 302005: x >= 12 and x <= 15, the integer value depends on:
+        # values in data
+    # 302036: depends on values in data (there is none)
+
     int_list = []
     miss = CODES_MISSING_LONG
     for i in range (0, len(str_list)):
@@ -412,7 +506,18 @@ def str2intForCloudAmount(n_list, str_list, x):
     return int_list
 
 def totalListOfHeightOfBase(n_list, clist2, clist3, clist4, clist5, NREP1_list, HH_CALC_list, hlist2, hlist3, hlist4, hlist5):
-    # This function makes total list of height of base from sequances 302004 and 302005
+    # This function makes total list of height of base from
+    # sequances 302004 and 302005.
+    # 302004: depends on:
+        # n_list = N_CALC = cloud cover total
+        # values in data
+    # 302005: depends on:
+        # NREP1_list = NREP1 = number of repetition of sequence 302005.
+        # clist2 = CLA2 = cloud amount in cloud layer 2.
+        # clist3 = CLA3 = cloud amount in cloud layer 3.
+        # clist4 = CLA4 = cloud amount in cloud layer 4.
+        # clist5 = CLA5 = cloud amount in cloud layer 5.
+        # values of data.
     float_list = []
     miss = CODES_MISSING_LONG
     missd = CODES_MISSING_DOUBLE
@@ -450,14 +555,20 @@ def totalListOfHeightOfBase(n_list, clist2, clist3, clist4, clist5, NREP1_list, 
     return float_list
 
 def totalListOfHeightOfSensor(elanem_list, elterm_list, tmax_list, tmin_list):
-    # This function makes a list of all the height of sensor values:
+    # This function makes a list of all the sensor heights:
         # 302035: 302032: for temperature and humidity measurement j = 0
         # 302035: 302033: for visibility measurement j = 1
         # 302035: 302034: for precipitation measurement j = 2
         # 302035: j = 3
         # 302043: 302040: for precipitation measurement j = 4
-        # 302043: 302041: for temperature measurement j = 5 
+        # 302043: 302041: for temperature measurement j = 5
+            # depends on:
+                # tmax_list = TMAX = maximum temperature
+                # tmin_list = TMIN = minimum temperature 
+            # F77 does not use values of elterm_list = ELTERM
+            # but maybe it should be added here?
         # 302043: 302042: for wind measurement j = 6
+            # depends on values of elanem_list = ELANEM
         # 302043: j = 7
     float_list = []
     miss = CODES_MISSING_DOUBLE
@@ -482,6 +593,10 @@ def totalListOfHeightOfSensor(elanem_list, elterm_list, tmax_list, tmin_list):
     return float_list
 
 def totalListOfR24H(HH24_list, R24H_list):
+    # This function makes a total list of precipitation past 24 hours.
+    # It depends on:
+        # HH24_list = HH24 = hour of the measurement
+        # values in data
     float_list = []
     miss = CODES_MISSING_DOUBLE
     for i in range(1, len(R24H_list) + 1):
@@ -492,6 +607,9 @@ def totalListOfR24H(HH24_list, R24H_list):
     return float_list
 
 def chooseGroundData(key_list, list1, list2):
+    # This function chooses ground data. If key_list includes key GROUND06,
+    # the values of GROUND06 (list2) is used. If not, values of GROUND (list1)
+    # is used.
     if('GROUND06' in key_list):
         int_list = list2
     else:
@@ -499,6 +617,14 @@ def chooseGroundData(key_list, list1, list2):
     return int_list
 
 def totalListOfSnowDepth(HH24_list, key_list, GR_list, SNOW06_list, SNOW18_list, SNOW_AWS_list):
+    # This function makes a total list of snow depth. It depends on:
+        # HH24_list = HH24 = hour of the measurement
+        # key_list, if it includes values SNOW06 or SNOW18
+        # GR_list = GR = ground data
+        # values of data:
+            # SNOW06_list = SNOW06
+            # SNOW18_list = SNOW18
+            # SNOW_AWS_list = SNOW_AWS
     float_list = []
     for i in range(0, len(HH24_list)):
         if('SNOW06' in key_list and HH24_list[i] == 5):
@@ -537,6 +663,11 @@ def totalListOfSnowDepth(HH24_list, key_list, GR_list, SNOW06_list, SNOW18_list,
     return float_list
 
 def replication(ns, NREP1_list, NREP2_list):
+    # This functions combines the 2 replications, which is used to make
+    # the array for delaid replication. It depends on:
+        # ns = NSUB = number of subsets
+        # NREP1_list = NREP1 = number of replication in sequence 302005
+        # NREP2_list = NREP2 = number of replication in sequence 302036
     int_list = []
     for i in range(0, ns):
         int_list.append(NREP1_list[i])      # 302005
@@ -544,7 +675,14 @@ def replication(ns, NREP1_list, NREP2_list):
     return int_list
 
 def totalPrecipitation(STATION_TYPE_list, R12HM_list, R1HM_list, R12HA_list, R1HA_list):
-    # This function makes a total list of precipitation: totalPrecipitationOrTotalWaterEquivalent 13011
+    # This function makes a total list of precipitation:
+    # totalPrecipitationOrTotalWaterEquivalent 13011. It depends on:
+        # STATION_TYPE_list = STATION_TYPE = tells if the station is
+            # automatic of not.
+        # R12HM_list = R_12H_MAN = Precipitation past 12 hours in manual station
+        # R1HM_list = R_1H_MAN = Precipitation past 1 hour in manual station
+        # R12HA_list = R_12H_AWS = Precipitation past 12 hours in automatic  station
+        # R1HA_list = R_1H_AWS = Precipitation past 1 hour in automatic station
     float_list = []
     for i in range (0, len(STATION_TYPE_list)):
         if (STATION_TYPE_list[i] == 0):
@@ -556,6 +694,11 @@ def totalPrecipitation(STATION_TYPE_list, R12HM_list, R1HM_list, R12HA_list, R1H
     return float_list
 
 def temperature(HH24_list, t1_list, t2_list):
+    # This function is used to choose right values for temperature.
+    # It depends on:
+        # HH24_list = HH24 = hour of measurement
+        # t1_list = TMAX06 or TMIN06
+        # t2_list = TMAX18 or TMIN18
     float_list = []
     miss = CODES_MISSING_DOUBLE
     for i in range (1, len(t1_list) + 1):
@@ -568,13 +711,15 @@ def temperature(HH24_list, t1_list, t2_list):
     return float_list
 
 def numberOfRepetition2(ns):
-    # Delaid  repetition for 302036
+    # This function gives delaid repetition for 302036.
     int_list = []
     for i in range(0, ns):
         int_list.append(0)
     return int_list
 
 def timePeriodForPrecipitation(totalR_H_list):
+    # This function gives time period values for precipitation. It depends on:
+        # totalR_H_list = PRECIPITATION = total list of precipitation.
     int_list = []
     miss = CODES_MISSING_LONG
     missD = CODES_MISSING_DOUBLE
@@ -588,11 +733,17 @@ def timePeriodForPrecipitation(totalR_H_list):
     return int_list
 
 def timePeriod(ns, hh_list, w1_list, tp_list, tmax_list, tmin_list):
-    # This funkction gives all the time period values:
+    # This funkction gives all the time period values. It depends on:
+        # ns = NSUB = number of subsets
         # 302038 [h] j = 0
+            # hh_list = HH24 = hour of measurement
+            # w1_list = W1_CALC = past weather 1
         # 302039 [h] j = 1 and 2
-        # 302040 [h] j = 3 and 4 
+        # 302040 [h] j = 3 and 4
+            # tp_list = PRECIPITATION_TIME_PERIOD = time period for precipitation
         # 302041 [h] j = 5, 6, 7 and 8
+            # tmax_list = TMAX = maximum temperature
+            # tmin_list = TMIN = minimum temperature
         # 302042 [min] j = 9, 10 and 11
         # 302044 [h] j = 12
         # 302045 [h] j = 13 and 14
@@ -643,12 +794,16 @@ def timePeriod(ns, hh_list, w1_list, tp_list, tmax_list, tmin_list):
     return int_list
 
 def typeOfInstrument(ns):
+    # This function gives the total list of instrument types.
+    # The size of list depends on ns = NSUB = number of subsets.
     float_list = []
     for n in range(1, ns + 1):
        float_list.append(8.0)
     return float_list
 
 def timeSignificance(ns):
+    # This function gives the total list of time significance.
+    # The size of list depends on ns = NSUB = number of subsets.
     int_list = []
     miss = 31
     for i in range(1, ns + 1):
@@ -657,14 +812,20 @@ def timeSignificance(ns):
     return int_list
 
 def windGustDirection(ns):
+    # This function gives the total list of direction of wind gust.
+    # The size of list depends on ns = NSUB = number of subsets.
     float_list = []
     miss = CODES_MISSING_LONG
-    for i in range(1, ns + 1):
+    for i in range(0, ns):
         float_list.append(miss)
         float_list.append(miss)
     return float_list
 
 def windGustSpeed(list1, list2):
+    # This function gives the total list of speed of wind gust.
+    # It depends on values in:
+        # list1 = WG_10MIN
+        # list2 = WG_1H_MAX
     float_list = []
     for i in range(0, len(list1)):
         float_list.append(list1[i])       # WG_10MIN
@@ -672,6 +833,12 @@ def windGustSpeed(list1, list2):
     return float_list
 
 def str2int(str_list, x):
+    # This function makes a string list (str_list) to a integer list (int_list).
+        # x represents the id of different values. Values are converted
+        # from string to integer depending on x.
+        # Before this function, missing values = '/' are changed to be '-1e+100'
+        # which in eccodes is the missing value of float type value. It is
+        # changed to be missing value of integer type value.
     int_list = []
     miss = CODES_MISSING_LONG
     for i in range (0, len(str_list)):
@@ -714,6 +881,11 @@ def str2int(str_list, x):
     return int_list
 
 def str2float(str_list, x):
+    # This function makes a string list (str_list) to a float list (float_list).
+        # x represents the id of different values. Values are converted
+        # from string to float depending on x.
+        # Before this function, missing values = '/' are changed to be '-1e+100'
+        # which in eccodes is the missing value of float type value.
     float_list = []
     for i in range (0, len(str_list)):
         if (str_list[i] == '-1e+100'):
