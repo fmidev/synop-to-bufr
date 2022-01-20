@@ -9,6 +9,42 @@ from eccodes import *
 
 VERBOSE = 1
 
+#####################################################
+# Separates parts from the first row of synop data  #
+# to get the parts needed in naming the output file #
+#####################################################
+def read_filename(input_filename):
+    Fin = open(input_filename, 'r')
+    rows_in_Fin = Fin.readlines()
+    Fin.close()
+
+    # Splits the first row from ":" -> [some text, filepath]
+    first_row = rows_in_Fin[0].split(': ')
+    
+    # Splits the path from file -> [path, to, the, file]
+    # and selects only the last part (file).
+    filepath = first_row[1].split('/')
+    for i in range (0, len(filepath)):
+        if (i == len(filepath) - 1):
+            filename = filepath[i]
+
+    # Splits filename fro, "_" and selects the right parts to name the file.
+    # The second value (year-month-day) is also split from "-" and only the
+    # day is selected.
+    # The 3rd value (hour:minute) is also split from ":".
+    parts = filename.split('_')
+    output = []
+    for i in range (0, len(parts)):
+        if (i == 0 or i == 2):
+            output.append(parts[i])
+        elif (i == 1):
+            day = parts[i].split('-')
+            output.append(day[2])
+    time = output[2].split(':')
+    output[2] = time[0]
+    output.append(time[1])
+
+    return output
 
 ################################################
 # Separates synop data to key and value arrays #
@@ -55,7 +91,6 @@ def read_synop(input_filename):
 
     return rows_with_key_value_pairs
     
-
 #############################################################################
 # Main sends input and output files here.                                   #
 # 1. Calls read_synop to get keys and values                                #
@@ -67,7 +102,8 @@ def read_synop(input_filename):
 #    bufr message.                                                          #
 #############################################################################
 
-def message_encoding(input_filename, output_filename):
+def message_encoding(input_filename):
+    output = read_filename(input_filename)
     # 1. 
     dataIn = read_synop(input_filename)
 
@@ -97,7 +133,7 @@ def message_encoding(input_filename, output_filename):
             sub_array[s].append(values[s])
 
     subset_array = subA.Subset(keys_in_each_row[0], sub_array)
-    
+
     # 3.
        #* Bufr message made from sample. (If many messages loop needs to be added.)
        #* Output file is oppened.
@@ -105,14 +141,27 @@ def message_encoding(input_filename, output_filename):
        #* bufr message is written to the output file. 
 
     bufr = codes_bufr_new_from_samples('BUFR4')
-    fout = open(output_filename, 'wb')
+    
 
     bufr_encode(bufr, subset_array)
 
+    # Output filename is named by:
+    #   - the parts from the first row of the data (output array)
+    #   - and by the name of the centre
+    # If centre's string name is not found, the integer name is used.
+
+    centre = codes_get(bufr, 'bufrHeaderCentre', s)
+    if (str(centre) == 'None'):
+        centre = codes_get(bufr, 'bufrHeaderCentre')
+    output_filename = output[0] + '_' + str(centre) + '_' + output[1] + output[2] + output[3] + '.bufr'
+    
+    fout = open(output_filename, 'wb')
     codes_write(bufr, fout)
     codes_release(bufr)
     fout.close()
 
+    
+    return output_filename
 
 #####################################################################################
 # Encodes a bufr message from subset_array object.                                  #
@@ -307,7 +356,7 @@ def bufr_encode(ibufr, subs):
         # Total snow depth [m]                              
         # Ground minimum temperature, past 12 hours [K]
     
-    codes_set_array(ibufr, 'stateOfGround', subs.GROUND06)
+    codes_set_array(ibufr, 'stateOfGround', subs.GR)
     codes_set_array(ibufr, 'totalSnowDepth', subs.SNOW_TOTAL)
     codes_set_array(ibufr, 'groundMinimumTemperaturePast12Hours', subs.TGMIN06)
 
@@ -408,7 +457,6 @@ def bufr_encode(ibufr, subs):
         # Time period or displacement (see Note 3)
         # Temperature change over specified period
 
-    
     codes_set(ibufr, 'pack', 1)  # Required to encode the keys back in the data section
 
 #############################################################################
@@ -417,16 +465,15 @@ def bufr_encode(ibufr, subs):
 #############################################################################
 
 def main():
-    if len(sys.argv) < 3:
-        print('Usage: ', sys.argv[0], ' synop_filename bufr_filename', file=sys.stderr)
+    if len(sys.argv) < 2:
+        print('Usage: ', sys.argv[0], ' synop_filename', file=sys.stderr)
         sys.exit(1)
 
     synop_filename = sys.argv[1]
-    bufr_filename = sys.argv[2]
     print('synop data from file: ', synop_filename)
 
     try:
-        message_encoding(synop_filename, bufr_filename)
+        bufr_filename = message_encoding(synop_filename)
         print('bufr data in file: ', bufr_filename)
     except CodesInternalError as err:
         if VERBOSE:

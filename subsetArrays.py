@@ -3,6 +3,7 @@ from eccodes import *
 class Subset:
 
     def __init__(self, key_array, value_array):
+        
         self.NSUB = len(value_array[0])
         self.NREP2 = numberOfRepetition2(self.NSUB)
         miss_list = []
@@ -18,31 +19,13 @@ class Subset:
         self.LON = str2float(miss_list, 6)
         self.STATION_NAME = miss_list
         self.STATION_TYPE = str2int(miss_list, 8)
-        self.WMON = miss_list                                             
-        self.BLOCK_NUMBER = str2int(self.WMON, 64)                              
-        self.STATION_NUMBER = str2int(self.WMON, 65)                 
-        self.N_CALC = str2int(miss_list, 29)                                
-        self.NH_CALC = str2intForCloudAmount(self.N_CALC, miss_list, 28)    
-        self.CH = typeOfcloud(self.N_CALC, miss_list, 10)                    
-        self.CL = typeOfcloud(self.N_CALC, miss_list, 11)                   
-        self.CM = typeOfcloud(self.N_CALC, miss_list, 20)                     
-        self.VS = verticalSignificance(self.N_CALC, self.NH_CALC, self.CL, self.CM)         
+        self.WMON = miss_list                                                           
+        self.N_CALC = str2int(miss_list, 29)                                      
         self.HH_CALC = str2float(miss_list, 25)                             
-        self.CLA2 = str2intForCloudAmount(self.N_CALC, miss_list, 12)        
-        self.CLA3 = str2intForCloudAmount(self.N_CALC, miss_list, 13)        
-        self.CLA4 = str2intForCloudAmount(self.N_CALC, miss_list, 14)
-        self.CLA5 = str2intForCloudAmount(self.N_CALC, miss_list, 15)
         self.CLHB2 = str2float(miss_list, 16)                                 
         self.CLHB3 = str2float(miss_list, 17)    
         self.CLHB4 = str2float(miss_list, 18)
         self.CLHB5 = str2float(miss_list, 19)
-        self.NREP1 = numberOfRepetition(self.CLA2, self.CLA3, self.CLA4, self.CLA5)
-        self.NREP2 = numberOfRepetition2(self.NSUB)                                
-        self.DELAYED = replication(self.NSUB, self.NREP1, self.NREP2)                     
-        self.VS_TOTAL = totalListOfVerticalSignificance(1, self.NREP1, self.NREP2, self.VS, self.N_CALC, self.CLA2, self.CLA3, self.CLA4, self.CLA5)
-        self.CLA_TOTAL = totalListOfCloudAmount(self.NH_CALC, self.CLA2, self.CLA3, self.CLA4, self.CLA5)
-        self.CLOUD_TYPE_TOTAL = totalListOfCloudType(self.NREP1, self.NREP2, self.CL, self.CM, self.CH)
-        self.HB_TOTAL = totalListOfHeightOfBase(self.N_CALC, self.CLA2, self.CLA3, self.CLA4, self.CLA5, self.NREP1, self.HH_CALC, self.CLHB2, self.CLHB3, self.CLHB4, self.CLHB5)
         self.DD = str2int(miss_list, 21)
         self.GROUND = miss_list 
         self.GROUND06 = str2int(miss_list, 23)   
@@ -59,14 +42,10 @@ class Subset:
         self.R_12H_MAN = str2float(miss_list, 37)
         self.R_1H_AWS = str2float(miss_list, 38)
         self.R_1H_MAN = str2float(miss_list, 39)
-        self.PRECIPITATION = totalPrecipitation(self.STATION_TYPE, self.R_12H_MAN, self.R_1H_MAN, self.R_12H_AWS, self.R_1H_AWS) 
-        self.PRECIPITATION_TIME_PERIOD = timePeriodForPrecipitation(self.PRECIPITATION)
         self.R_24H = str2float(miss_list, 40)
-        self.R_24H_TOTAL = totalListOfR24H(self.HH24, self.R_24H) 
         self.SNOW06 = str2float(miss_list, 41)
         self.SNOW18 = str2float(miss_list, 42)
         self.SNOW_AWS = str2float(miss_list, 43)
-        self.SNOW_TOTAL = totalListOfSnowDepth(self.HH24, self.SNOW06, self.SNOW18, self.SNOW_AWS)
         self.SYNOP = miss_list
         self.T = str2float(miss_list, 45)
         self.TD = str2float(miss_list, 46)
@@ -75,16 +54,10 @@ class Subset:
         self.TMAX18 = str2float(miss_list, 49)
         self.TMIN06 = str2float(miss_list, 50)
         self.TMIN18 = str2float(miss_list, 51)
-        self.TMAX = temperature(self.HH24, self.TMAX06, self.TMAX18)
-        self.TMIN = temperature(self.HH24, self.TMIN06, self.TMIN18)
-        self.HEIGHT_OF_SENSOR = totalListOfHeightOfSensor(self.ELANEM, self.ELTERM, self.TMAX, self.TMIN)
-        self.INSTRUMENT = typeOfInstrument(self.NSUB)
-        self.TIME_SIGNIFICANCE = timeSignificance(self.NSUB)
         self.VALUE_COUNT = miss_list
         self.VIS = str2int(miss_list, 53)
         self.W1_CALC = str2int(miss_list, 54)   
         self.W2_CALC = str2int(miss_list, 55)   
-        self.TIME_PERIOD = timePeriod(self.NSUB, self.HH24, self.W1_CALC, self.PRECIPITATION_TIME_PERIOD, self.TMAX, self.TMIN) 
         self.WD_10MIN = str2float(miss_list, 56)  
         self.WG_10MIN = str2float(miss_list, 57)  
         self.WG_1H_MAX = str2float(miss_list, 58)  
@@ -93,13 +66,8 @@ class Subset:
         self.WS_MAX_3H_T = miss_list                                       
         self.WW_CALC = str2int(miss_list, 62)   
         self.YYYY = str2int(miss_list, 63)
-        self.WGD_MAX = windGustDirection(self.NSUB)
-        self.WGS_MAX = windGustSpeed(self.WG_10MIN, self.WG_1H_MAX)
-        
-        number_of_keys = len(key_array)
-        n_is_set = 0
-        for k in range (0, number_of_keys):
-            key = key_array[k]
+       
+        for key in key_array:
             if (key == 'TTAAII'):                                                
                 self.TTAAII = value_array[key_array.index(key)]
             elif (key == 'ELANEM'):                                                 
@@ -121,33 +89,15 @@ class Subset:
             elif (key == 'WMON'):                                                 
                 self.WMON = value_array[key_array.index(key)]                                                                                              
                 self.BLOCK_NUMBER = str2int(self.WMON, 64)                                                                               
-                self.STATION_NUMBER = str2int(self.WMON, 65)                 
-            elif ('N_CALC' in key_array and n_is_set == 0):                                                 
-                self.N_CALC = str2int(value_array[key_array.index('N_CALC')], 29)
-                n_is_set = 1   
-                k = k - 1                 
-            elif (key == 'NH_CALC'):
-                self.NH_CALC = str2intForCloudAmount(self.N_CALC, value_array[key_array.index(key)], 28)  
-            elif (key == 'CH'):                                                 
-                self.CH = typeOfcloud(self.N_CALC, value_array[key_array.index(key)], 10)                    
-            elif (key == 'CL'):                                                 
-                self.CL = typeOfcloud(self.N_CALC, value_array[key_array.index(key)], 11)                   
-            elif (key == 'CM'):                                                 
-                self.CM = typeOfcloud(self.N_CALC, value_array[key_array.index(key)], 20)                                    
+                self.STATION_NUMBER = str2int(self.WMON, 65)                
+            elif (key =='N_CALC'):                                                 
+                self.N_CALC = str2int(value_array[key_array.index(key)], 29)               
             elif (key == 'HH_CALC'):                                                 
-                self.HH_CALC = str2float(value_array[key_array.index(key)], 25)                             
-            elif (key == 'CLA2'):                                                 
-                self.CLA2 = str2intForCloudAmount(self.N_CALC, value_array[key_array.index(key)], 12)        
-            elif (key == 'CLA3'):                                                 
-                self.CLA3 = str2intForCloudAmount(self.N_CALC, value_array[key_array.index(key)], 13)        
-            elif (key == 'CLA4'):                                                 
-                self.CLA4 = str2intForCloudAmount(self.N_CALC, value_array[key_array.index(key)], 14)
-            elif (key == 'CLA5'):                                                 
-                self.CLA5 = str2intForCloudAmount(self.N_CALC, value_array[key_array.index(key)], 15)
+                self.HH_CALC = str2float(value_array[key_array.index(key)], 25) 
             elif (key == 'CLHB2'):                                                 
-                self.CLHB2 = str2float(value_array[key_array.index(key)], 16)                                 
+                self.CLHB2 = str2float(value_array[key_array.index(key)], 16)                               
             elif (key == 'CLHB3'):                                                 
-                self.CLHB3 = str2float(value_array[key_array.index(key)], 17)    
+                self.CLHB3 = str2float(value_array[key_array.index(key)], 17)   
             elif (key == 'CLHB4'):                                                 
                 self.CLHB4 = str2float(value_array[key_array.index(key)], 18)
             elif (key == 'CLHB5'):                                                 
@@ -155,7 +105,7 @@ class Subset:
             elif (key == 'DD'):                                                 
                 self.DD = str2int(value_array[key_array.index(key)], 21)
             elif (key == 'GROUND'):                                                 
-                self.GROUND = value_array[key_array.index(key)] 
+                self.GROUND = str2int(value_array[key_array.index(key)], 22)
             elif (key == 'GROUND06'):                                                 
                 self.GROUND06 = str2int(value_array[key_array.index(key)], 23)   
             elif (key == 'HH24'):                                                 
@@ -183,7 +133,7 @@ class Subset:
             elif (key == 'R_1H_AWS'):                                                 
                 self.R_1H_AWS = str2float(value_array[key_array.index(key)], 38)
             elif (key == 'R_1H_MAN'):                                                 
-                self.R_1H_MAN = str2float(value_array[key_array.index(key)], 39)      
+                self.R_1H_MAN = str2float(value_array[key_array.index(key)], 39)     
             elif (key == 'R_24H'):                                                 
                 self.R_24H = str2float(value_array[key_array.index(key)], 40)
             elif (key == 'SNOW06'):                                                 
@@ -232,6 +182,24 @@ class Subset:
                 self.WW_CALC = str2int(value_array[key_array.index(key)], 62)   
             elif (key == 'YYYY'):                                                 
                 self.YYYY = str2int(value_array[key_array.index(key)], 63)
+
+        for key in key_array:    
+            if (key == 'NH_CALC'):
+                self.NH_CALC = str2intForCloudAmount(self.N_CALC, value_array[key_array.index(key)], 28) 
+            elif (key == 'CH'):                                                 
+                self.CH = typeOfcloud(self.N_CALC, value_array[key_array.index(key)], 10)                   
+            elif (key == 'CL'):                                                 
+                self.CL = typeOfcloud(self.N_CALC, value_array[key_array.index(key)], 11)              
+            elif (key == 'CM'):                                                 
+                self.CM = typeOfcloud(self.N_CALC, value_array[key_array.index(key)], 20) 
+            elif (key == 'CLA2'):                                                 
+                self.CLA2 = str2intForCloudAmount(self.N_CALC, value_array[key_array.index(key)], 12)   
+            elif (key == 'CLA3'):                                                 
+                self.CLA3 = str2intForCloudAmount(self.N_CALC, value_array[key_array.index(key)], 13)   
+            elif (key == 'CLA4'):                                                 
+                self.CLA4 = str2intForCloudAmount(self.N_CALC, value_array[key_array.index(key)], 14)
+            elif (key == 'CLA5'):                                                 
+                self.CLA5 = str2intForCloudAmount(self.N_CALC, value_array[key_array.index(key)], 15)
         
         self.VS = verticalSignificance(self.N_CALC, self.NH_CALC, self.CL, self.CM)         
         self.NREP1 = numberOfRepetition(self.CLA2, self.CLA3, self.CLA4, self.CLA5)
@@ -243,7 +211,8 @@ class Subset:
         self.PRECIPITATION = totalPrecipitation(self.STATION_TYPE, self.R_12H_MAN, self.R_1H_MAN, self.R_12H_AWS, self.R_1H_AWS)                                                
         self.PRECIPITATION_TIME_PERIOD = timePeriodForPrecipitation(self.PRECIPITATION)
         self.R_24H_TOTAL = totalListOfR24H(self.HH24, self.R_24H) 
-        self.SNOW_TOTAL = totalListOfSnowDepth(self.HH24, self.SNOW06, self.SNOW18, self.SNOW_AWS)
+        self.GR = chooseGroundData(key_array, self.GROUND, self.GROUND06)
+        self.SNOW_TOTAL = totalListOfSnowDepth(self.HH24, key_array, self.GR, self.SNOW06, self.SNOW18, self.SNOW_AWS)
         self.TMAX = temperature(self.HH24, self.TMAX06, self.TMAX18)                                              
         self.TMIN = temperature(self.HH24, self.TMIN06, self.TMIN18)                                                
         self.HEIGHT_OF_SENSOR = totalListOfHeightOfSensor(self.ELANEM, self.ELTERM, self.TMAX, self.TMIN)                                                 
@@ -252,8 +221,7 @@ class Subset:
         self.TIME_PERIOD = timePeriod(self.NSUB, self.HH24, self.W1_CALC, self.PRECIPITATION_TIME_PERIOD, self.TMAX, self.TMIN) 
         self.WGD_MAX = windGustDirection(self.NSUB)                                                 
         self.WGS_MAX = windGustSpeed(self.WG_10MIN, self.WG_1H_MAX)
-
-
+                                               
 def verticalSignificance(n_list, nh_list, CL_list, CM_list):
     # This function calculates vertical significance 8002 for sequence 302004
     int_list = []
@@ -401,19 +369,17 @@ def numberOfRepetition(list2, list3, list4, list5):
     for i in range(0, len(list2)):
         int_list.append(1)
 
-    for i in range(0, len(list2)):
-        if (list3[i] == miss or list3[i] == 0):
-            int_list[i] == 1
+    for i in range (0, len(list2)):
+        if (list5[i] == miss or list5[i] == 0):
             if (list4[i] == miss or list4[i] == 0):
-                int_list[i] == 1
-                if (list5[i] == miss or list5[i] == 0):
-                    int_list[i] == 1
+                if(list3[i] == miss or list3[i] == 0):
+                    int_list[i] = 1
                 else:
-                    int_list[i] = 4
+                    int_list[i] = 2
             else:
                 int_list[i] = 3
         else:
-            int_list[i] = 2
+            int_list[i] = 4    
     return int_list
 
 def str2intForCloudAmount(n_list, str_list, x):
@@ -475,7 +441,7 @@ def totalListOfHeightOfBase(n_list, clist2, clist3, clist4, clist5, NREP1_list, 
                     if (clist4[i] == miss):
                         float_list.append(missd)
                     else:
-                        float_list.append(list4[i])
+                        float_list.append(hlist4[i])
                 else:                                           # 302005
                     if (clist5[i] == miss):
                         float_list.append(missd)
@@ -525,15 +491,49 @@ def totalListOfR24H(HH24_list, R24H_list):
             float_list.append(miss)
     return float_list
 
-def totalListOfSnowDepth(HH24_list, SNOW06_list, SNOW18_list, SNOW_AWS_list):
+def chooseGroundData(key_list, list1, list2):
+    if('GROUND06' in key_list):
+        int_list = list2
+    else:
+        int_list = list1
+    return int_list
+
+def totalListOfSnowDepth(HH24_list, key_list, GR_list, SNOW06_list, SNOW18_list, SNOW_AWS_list):
     float_list = []
     for i in range(0, len(HH24_list)):
-        if(HH24_list[i] == 5):
-            float_list.append(SNOW06_list[i])
-        elif(HH24_list[i] == 17):
-            float_list.append(SNOW18_list[i])
+        if('SNOW06' in key_list and HH24_list[i] == 5):
+            if (SNOW06_list[i] == 0 and GR_list[i] >= 11 and GR_list[i] <= 12):
+                float_list.append(-0.02)
+            elif (SNOW06_list[i] == 0 and GR_list[i] == 13):
+                float_list.append(-0.01)
+            elif (SNOW06_list[i] == 0):
+                float_list.append(-0.01)
+            elif (SNOW06_list[i] == -0.01):
+                float_list.append(0.0)
+            else:
+                float_list.append(SNOW06_list[i])
+        elif('SNOW18' in key_list and HH24_list[i] == 17):
+            if (SNOW18_list[i] == 0 and GR_list[i] >= 11 and GR_list[i] <= 12):
+                float_list.append(-0.02)
+            elif (SNOW18_list[i] == 0 and GR_list[i] == 13):
+                float_list.append(-0.01)
+            elif (SNOW18_list[i] == 0):
+                float_list.append(-0.01)
+            elif (SNOW18_list[i] == -0.01):
+                float_list.append(0.0)
+            else:
+                float_list.append(SNOW18_list[i])
         else:
-            float_list.append(SNOW_AWS_list[i])
+            if (SNOW_AWS_list[i] == 0 and GR_list[i] >= 11 and GR_list[i] <= 12):
+                float_list.append(-0.02)
+            elif (SNOW_AWS_list[i] == 0 and GR_list[i] == 13):
+                float_list.append(-0.01)
+            elif (SNOW_AWS_list[i] == 0):
+                float_list.append(-0.01)
+            elif (SNOW_AWS_list[i] == -0.01):
+                float_list.append(0.0)
+            else:
+                float_list.append(SNOW_AWS_list[i])
     return float_list
 
 def replication(ns, NREP1_list, NREP2_list):
@@ -676,7 +676,7 @@ def str2int(str_list, x):
     miss = CODES_MISSING_LONG
     for i in range (0, len(str_list)):
         if (str_list[i] == '-1e+100'):
-            if (x == 23):
+            if (x == 22 or x == 23):
                 int_list.append(31)
             elif (x == 29):
                 int_list.append(miss)
@@ -724,15 +724,11 @@ def str2float(str_list, x):
             if (str_list[i] == '0'):
                 float_list.append(-0.1)
             elif (str_list[i] == '-1'):
-                float_list.append(0)
+                float_list.append(0.0)
             else:
                 float_list.append(float(str_list[i]))
         elif (x >= 41 and x <= 43):
-            if (float(str_list[i]) == 0):
-                float_list.append(-0.01)
-                    # ei oo ihan varma tasta
-            else:
-                float_list.append(float(str_list[i]) * 0.010)   # cm -> m
+            float_list.append(float(str_list[i]) * 0.010)   # cm -> m
         elif (x >= 45 and x <= 51):
             float_list.append(float(str_list[i]) + 273.15)  # C -> K 
         else:
