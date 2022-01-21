@@ -68,15 +68,18 @@ class Subset:
         self.TMIN18 = str2float(miss_list, 51)
         self.VALUE_COUNT = miss_list
         self.VIS = str2int(miss_list, 53)
-        self.W1_CALC = str2int(miss_list, 54)   
-        self.W2_CALC = str2int(miss_list, 55)   
+        self.W1_CALC = str2int(miss_list, 54)  
+        self.W1_AWS = str2int(miss_list, 54)
+        self.W2_CALC = str2int(miss_list, 55)  
+        self.W2_AWS = str2int(miss_list, 55) 
         self.WD_10MIN = str2float(miss_list, 56)  
         self.WG_10MIN = str2float(miss_list, 57)  
         self.WG_1H_MAX = str2float(miss_list, 58)  
         self.WS_10MIN = str2float(miss_list, 59)  
         self.WS_MAX_3H = miss_list
         self.WS_MAX_3H_T = miss_list                                       
-        self.WW_CALC = str2int(miss_list, 62)   
+        self.WW_CALC = str2int(miss_list, 62) 
+        self.WW_AWS = str2int(miss_list, 62) 
         self.YYYY = str2int(miss_list, 63)
        
        ######################################################################
@@ -182,9 +185,13 @@ class Subset:
             elif (key == 'VIS'):                                                 
                 self.VIS = str2int(value_array[key_array.index(key)], 53)
             elif (key == 'W1_CALC'):                                                 
-                self.W1_CALC = str2int(value_array[key_array.index(key)], 54)   
+                self.W1_CALC = str2int(value_array[key_array.index(key)], 54) 
+            elif (key == 'W1_AWS'):                                                 
+                self.W1_CALC = str2int(value_array[key_array.index(key)], 54)
             elif (key == 'W2_CALC'):                                                 
-                self.W2_CALC = str2int(value_array[key_array.index(key)], 55)       
+                self.W2_CALC = str2int(value_array[key_array.index(key)], 55) 
+            elif (key == 'W2_AWS'):                                                 
+                self.W2_CALC = str2int(value_array[key_array.index(key)], 55)
             elif (key == 'WD_10MIN'):                                                 
                 self.WD_10MIN = str2float(value_array[key_array.index(key)], 56)  
             elif (key == 'WG_10MIN'):                                                 
@@ -198,7 +205,9 @@ class Subset:
             elif (key == 'WS_MAX_3H_T'):                                                 
                 self.WS_MAX_3H_T = value_array[key_array.index(key)]                                         
             elif (key == 'WW_CALC'):                                                 
-                self.WW_CALC = str2int(value_array[key_array.index(key)], 62)   
+                self.WW_CALC = str2int(value_array[key_array.index(key)], 62)
+            elif (key == 'WW_AWS'):
+                self.WW_AWS = str2int(value_array[key_array.index(key)], 62)
             elif (key == 'YYYY'):                                                 
                 self.YYYY = str2int(value_array[key_array.index(key)], 63)
 
@@ -246,6 +255,9 @@ class Subset:
         self.INSTRUMENT = typeOfInstrument(self.NSUB)                                                 
         self.TIME_SIGNIFICANCE = timeSignificance(self.NSUB)
         self.TIME_PERIOD = timePeriod(self.NSUB, self.HH24, self.W1_CALC, self.PRECIPITATION_TIME_PERIOD, self.TMAX, self.TMIN) 
+        self.WW = weather(self.STATION_TYPE, 'WW_AWS', key_array, self.WW_CALC, self.WW_AWS)
+        self.W1 = weather(self.STATION_TYPE, 'W1_AWS', key_array, self.W1_CALC, self.W1_AWS)
+        self.W2 = weather(self.STATION_TYPE, 'W2_AWS', key_array, self.W2_CALC, self.W2_AWS)
         self.WGD_MAX = windGustDirection(self.NSUB)                                                 
         self.WGS_MAX = windGustSpeed(self.WG_10MIN, self.WG_1H_MAX)
 
@@ -826,6 +838,23 @@ def timeSignificance(ns):
     for i in range(1, ns + 1):
         int_list.append(2)
         int_list.append(miss)
+    return int_list
+
+def weather(st_list, name, key_list, man_list, aws_list):
+    # This function chooses values for present and past weather.
+        # It chooses values between manual (man_list)
+        # and automatic (aws_list) observations. It depends on:
+            # st_list = STATION_TYPE
+            # key_list, if key name (name) even is in the data.
+    int_list = []
+    for i in range (0, len(man_list)):
+        if (st_list[i] == 0):
+            if (name in key_list):
+                int_list.append(aws_list[i])
+            else:
+                int_list.append(man_list[i])
+        else:
+            int_list.append(man_list[i])
     return int_list
 
 def windGustDirection(ns):

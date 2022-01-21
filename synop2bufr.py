@@ -373,9 +373,9 @@ def bufr_encode(ibufr, subs):
     # If there were aws and manual values:
         # when station type == 0 -> use aws values: (WW_AWS, W1_AWS, W2_AWS )
         # when station type is something else -> use manual values
-    codes_set_array(ibufr, 'presentWeather', subs.WW_CALC)
-    codes_set_array(ibufr, 'pastWeather1', subs.W1_CALC)
-    codes_set_array(ibufr, 'pastWeather2', subs.W2_CALC)    
+    codes_set_array(ibufr, 'presentWeather', subs.WW)
+    codes_set_array(ibufr, 'pastWeather1', subs.W1)
+    codes_set_array(ibufr, 'pastWeather2', subs.W2)    
 
         # 101002:    
             # Replicate 1 descriptor 2 times
