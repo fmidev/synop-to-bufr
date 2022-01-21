@@ -15,7 +15,7 @@ class Subset:
     #    is given.                                          #
     #########################################################
     def __init__(self, key_array, value_array):
-        
+
         self.NSUB = len(value_array[0])
         miss_list = []
         for m in range(0, self.NSUB):
@@ -42,7 +42,8 @@ class Subset:
         self.GROUND06 = str2int(miss_list, 23)   
         self.HH24 = str2int(miss_list, 24)
         self.MI = str2int(miss_list, 26)
-        self.MM = str2int(miss_list, 27)       
+        self.MM = str2int(miss_list, 27) 
+        self.N_CALC = str2int(miss_list, 29)  
         self.OBSTIME = miss_list
         self.P_A = str2int(miss_list, 31)
         self.P_PPP = str2float(miss_list, 32)
@@ -108,8 +109,8 @@ class Subset:
                 self.WMON = value_array[key_array.index(key)]                                                                                              
                 self.BLOCK_NUMBER = str2int(self.WMON, 64)                                                                               
                 self.STATION_NUMBER = str2int(self.WMON, 65)                
-            elif (key =='N_CALC'):                                                 
-                self.N_CALC = str2int(value_array[key_array.index(key)], 29)               
+            elif (key =='N_CALC'):                                            
+                self.N_CALC = str2int(value_array[key_array.index(key)], 29)          
             elif (key == 'HH_CALC'):                                                 
                 self.HH_CALC = str2float(value_array[key_array.index(key)], 25) 
             elif (key == 'CLHB2'):                                                 
@@ -208,11 +209,11 @@ class Subset:
             if (key == 'NH_CALC'):
                 self.NH_CALC = str2intForCloudAmount(self.N_CALC, value_array[key_array.index(key)], 28) 
             elif (key == 'CH'):                                                 
-                self.CH = typeOfcloud(self.N_CALC, value_array[key_array.index(key)], 10)                   
+                self.CH = typeOfCloud(self.N_CALC, value_array[key_array.index(key)], 10)                   
             elif (key == 'CL'):                                                 
-                self.CL = typeOfcloud(self.N_CALC, value_array[key_array.index(key)], 11)              
+                self.CL = typeOfCloud(self.N_CALC, value_array[key_array.index(key)], 11)              
             elif (key == 'CM'):                                                 
-                self.CM = typeOfcloud(self.N_CALC, value_array[key_array.index(key)], 20) 
+                self.CM = typeOfCloud(self.N_CALC, value_array[key_array.index(key)], 20) 
             elif (key == 'CLA2'):                                                 
                 self.CLA2 = str2intForCloudAmount(self.N_CALC, value_array[key_array.index(key)], 12)   
             elif (key == 'CLA3'):                                                 
@@ -221,7 +222,7 @@ class Subset:
                 self.CLA4 = str2intForCloudAmount(self.N_CALC, value_array[key_array.index(key)], 14)
             elif (key == 'CLA5'):                                                 
                 self.CLA5 = str2intForCloudAmount(self.N_CALC, value_array[key_array.index(key)], 15)
-        
+
         ##################################################################
         # 4. The rest of the values are given to get all the values that # 
         #    bufr message (with descriptor 307080) needs.                #
@@ -366,7 +367,7 @@ def totalListOfCloudAmount(NREP2_list, list1, list2, list3, list4, list5):
                 int_list.append(miss)     
     return int_list
 
-def typeOfcloud(n_list, str_list, x):
+def typeOfCloud(n_list, str_list, x):
     # This function calculates cloud type 20012 for sequence 302004:
         # Cloud type (low clouds) CL :
         #   20012 = CL + 30,
@@ -383,7 +384,7 @@ def typeOfcloud(n_list, str_list, x):
     int_list = []
     miss = CODES_MISSING_LONG
     for i in range (0, len(str_list)):    
-        if (n_list[i] == miss or str_list[i] == '-1e+100'):
+        if (n_list[i] == miss):
             int_list.append(miss)
         elif (n_list[i] == 113):
             if (x == 11):
@@ -392,6 +393,8 @@ def typeOfcloud(n_list, str_list, x):
                 int_list.append(61)
             else:
                 int_list.append(60)      
+        elif (str_list[i] == '-1e+100'):
+            int_list.append(miss)
         else:
             if (x == 11):
                 cl = int(str_list[i]) + 30
