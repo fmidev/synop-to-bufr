@@ -237,7 +237,7 @@ class Subset:
         self.PRECIPITATION = totalPrecipitation(self.STATION_TYPE, self.R_12H_MAN, self.R_1H_MAN, self.R_12H_AWS, self.R_1H_AWS)                                                
         self.PRECIPITATION_TIME_PERIOD = timePeriodForPrecipitation(self.PRECIPITATION)
         self.R_24H_TOTAL = totalListOfR24H(self.HH24, self.R_24H) 
-        self.GR = chooseGroundData(key_array, self.GROUND, self.GROUND06)
+        self.GR = groundData(key_array, self.HH24, self.GROUND, self.GROUND06)
         self.SNOW_TOTAL = totalListOfSnowDepth(self.HH24, key_array, self.GR, self.SNOW06, self.SNOW18, self.SNOW_AWS)
         self.TMAX = temperature(self.HH24, self.TMAX06, self.TMAX18)                                              
         self.TMIN = temperature(self.HH24, self.TMIN06, self.TMIN18)                                                
@@ -606,14 +606,28 @@ def totalListOfR24H(HH24_list, R24H_list):
             float_list.append(miss)
     return float_list
 
-def chooseGroundData(key_list, list1, list2):
-    # This function chooses ground data. If key_list includes key GROUND06,
-    # the values of GROUND06 (list2) is used. If not, values of GROUND (list1)
-    # is used.
-    if('GROUND06' in key_list):
-        int_list = list2
-    else:
-        int_list = list1
+def groundData(key_list, HH24_list, list1, list2):
+    # This function chooses ground data from GROUND06 and GROUND,
+    # and modifies it.
+    # If key_list includes key GROUND06 and HH24 is 8,
+    # the values of GROUND06 (list2) are used.
+    # If not, then values of GROUND (list1) are used.
+    g = [1, 2, 4, 11, 11, 12, 13, 16, 17]
+    int_list = []
+    for i in range (0, len(HH24_list)):
+        if (HH24_list[i] == 6 and 'GROUND06' in key_list):
+            ind = list2[i]
+            if (ind >= 1 and ind <= 9):
+                int_list.append(g[ind-1])
+            else:
+                int_list.append(ind)
+        else:
+            ind = list1[i]
+            if (ind >= 1 and ind <= 9):
+                int_list.append(g[ind-1])
+            else:
+                int_list.append(ind)
+  
     return int_list
 
 def totalListOfSnowDepth(HH24_list, key_list, GR_list, SNOW06_list, SNOW18_list, SNOW_AWS_list):
