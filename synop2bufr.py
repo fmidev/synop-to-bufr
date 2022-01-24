@@ -3,7 +3,7 @@ from datetime import datetime
 import traceback
 import numpy as np
 import subsetArrays as subA
-import separateKeysAndValues
+import separate_keys_and_values
 
 from eccodes import *
 
@@ -108,7 +108,7 @@ def message_encoding(input_filename):
     dataIn = read_synop(input_filename)
 
     # 2.
-       #* This for loop uses separateKeysAndValues module to get the keys and values
+       #* This for loop uses separate_keys_and_values module to get the keys and values
        #  in separate arrays.
        #* After all the values and keys are separated to their own
        #  arrays, the array that contents values are used to make
@@ -123,10 +123,10 @@ def message_encoding(input_filename):
         sub_array.append(array)
 
     for nr in range(0, len(dataIn)):
-        keys = separateKeysAndValues.getKeys(dataIn[nr])
+        keys = separate_keys_and_values.get_keys(dataIn[nr])
         keys_in_each_row.append(keys)
 
-        values = separateKeysAndValues.getValues(dataIn[nr])
+        values = separate_keys_and_values.get_values(dataIn[nr])
         values_in_each_row.append(values)
 
         for s in range(0,len(values)):
@@ -370,9 +370,6 @@ def bufr_encode(ibufr, subs):
             # Past weather (1)          
             # Past weather (2)         
 
-    # If there were aws and manual values:
-        # when station type == 0 -> use aws values: (WW_AWS, W1_AWS, W2_AWS )
-        # when station type is something else -> use manual values
     codes_set_array(ibufr, 'presentWeather', subs.WW)
     codes_set_array(ibufr, 'pastWeather1', subs.W1)
     codes_set_array(ibufr, 'pastWeather2', subs.W2)    
