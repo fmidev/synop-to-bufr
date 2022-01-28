@@ -11,16 +11,16 @@ class Subset:
     The values are modified in different functions according to Codes manual.
         1. At first Subset class makes all the values, which are not dependent
         on any other objects to be missing. Only the number of subsets (NSUB) is given.
-        2. The values are read form v_a, and value is placed in keyname object
-        acording keyname's index position. Values that don't depend on any other
-        objects are given first. As an exception, block number and sation number are
-        given acording to WMO:
-            It is a 5-digit number yyxxx, where the first 2 digits (yy) are called a block
-            number. For example, 02 is for Finland and Sweden. The last 3 digits (xxx) are
+        2. The values are read form v_a, and value is placed in keyname object acording
+        keyname's index position. Values that don't depend on any other are given first.
+        As an exception, block number and sation number are given acording to WMO:
+            A 5-digit number yyxxx: the first 2 digits (yy) are called a block number
+            (for example, 02 is for Finland and Sweden), the last 3 digits (xxx) are
             called a station number, which tells the id of the station.
-        3. Values that depend only on N_CALC (cloud cover total) are given.
-        4. The rest of all the needed values are given.
-        5. Functions which gives the right values to bufr message, are placed below.
+        3. After that, values that depend on N_CALC are set to missing.
+        4. Values that depend only on N_CALC (cloud cover total) are given.
+        5. The rest of all the needed values are given.
+        6. Functions which gives the right values to bufr message, are placed below.
     """
     # 1.
     def __init__(self, key_array, value_array):
@@ -40,6 +40,8 @@ class Subset:
         self.STATION_NAME = miss_list
         self.STATION_TYPE = str2int(miss_list, 8)
         self.WMON = miss_list
+        self.BLOCK_NUMBER = str2int(self.WMON, 64)
+        self.STATION_NUMBER = str2int(self.WMON, 65)
         self.N_CALC = str2int(miss_list, 29)
         self.HH_CALC = str2float(miss_list, 25)
         self.CLHB2 = str2float(miss_list, 16)
@@ -53,7 +55,6 @@ class Subset:
         self.HH24 = str2int(miss_list, 24)
         self.MI = str2int(miss_list, 26)
         self.MM = str2int(miss_list, 27)
-        self.N_CALC = str2int(miss_list, 29)
         self.OBSTIME = miss_list
         self.P_A = str2int(miss_list, 31)
         self.P_PPP = str2float(miss_list, 34)
@@ -205,11 +206,11 @@ class Subset:
             elif key == 'W1_CALC':
                 self.W1_CALC = str2int(v_a[k_a.index(key)], 54)
             elif key == 'W1_AWS':
-                self.W1_CALC = str2int(v_a[k_a.index(key)], 54)
+                self.W1_AWS = str2int(v_a[k_a.index(key)], 54)
             elif key == 'W2_CALC':
                 self.W2_CALC = str2int(v_a[k_a.index(key)], 55)
             elif key == 'W2_AWS':
-                self.W2_CALC = str2int(v_a[k_a.index(key)], 55)
+                self.W2_AWS = str2int(v_a[k_a.index(key)], 55)
             elif key == 'WD_10MIN':
                 self.WD_10MIN = str2float(v_a[k_a.index(key)], 56)
             elif key == 'WG_10MIN':
@@ -230,7 +231,13 @@ class Subset:
                 self.YYYY = str2int(v_a[k_a.index(key)], 63)
 
     # 3.
-        self.CLA = [miss_list, miss_list, miss_list, miss_list]
+        self.NH_CALC = str2int_cloud_amount(self.N_CALC, miss_list, 28)
+        self.CH = cloud_type(self.N_CALC, miss_list, 10)
+        self.CL = cloud_type(self.N_CALC, miss_list, 30)
+        self.CM = cloud_type(self.N_CALC, miss_list, 20)
+        self.CLA = [miss_list, miss_list, miss_list, miss_list] 
+
+    # 4.
         for key in k_a:
             if key == 'NH_CALC':
                 self.NH_CALC = str2int_cloud_amount(self.N_CALC, v_a[k_a.index(key)], 28)
@@ -253,7 +260,7 @@ class Subset:
                 self.CLA5 = str2int_cloud_amount(self.N_CALC, v_a[k_a.index(key)], 15)
                 self.CLA[3] = self.CLA5
 
-    # 4.
+    # 5.
         self.VS = vertical_significance(self.N_CALC, self.NH_CALC, self.CL, self.CM)
         self.NR1 = number_of_repetition(self.CLA)
         self.NR2 = number_of_repetition2(self.NSUB)
@@ -279,7 +286,7 @@ class Subset:
         self.WGD_MAX = wind_gust_direction(self.NSUB)
         self.WGS_MAX = wind_gust_speed(self.WG_10MIN, self.WG_1H_MAX)
 
-# 5.
+# 6.
 
 def vertical_significance(n_list, nh_list, cl_list, cm_list):
     """
