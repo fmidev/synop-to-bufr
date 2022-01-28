@@ -86,10 +86,8 @@ def message_encoding(input_file):
     Keys and values are separated by separate_keys_and_values module.
     Subset object has all the values from different subsets in the same array
     acording to key-name.
-    4. separate_keys_and_values module's are_all_the_rows_similar function is used to
-    check if all the keys are same in the keys_in_each_row array. If they are, the first
-    row of key names is used. If not, the row which has most of the key_name is used,
-    which is gotten by function longest_row in separate_keys_and_values module.
+    4. separate_keys_and_values module's longest_row function is used to choose the key
+    row from keys_in_each_row, which has the biggest amount of key names.
     5. The bufr message sceleton is made from a sample (edition 4).
     6. Sends the bufr sceleton and subset_array to bufr_encode to fill the bufr message.
     7. Output filename is named by the parts from the first row of the data (output) and
@@ -120,12 +118,8 @@ def message_encoding(input_file):
             sub_array[j].append(values[j])
 
     # 4.
-    answer = separate_keys_and_values.are_all_the_rows_similar(keys_in_each_row)
-    if answer == True:
-        subset_array = subA.Subset(keys_in_each_row[0], sub_array)
-    else:
-        longest = separate_keys_and_values.longest_row(keys_in_each_row)
-        sub_array = subA.Subset(keys_in_each_row[longest], sub_array)
+    longest = separate_keys_and_values.longest_row(keys_in_each_row)
+    subset_array = subA.Subset(keys_in_each_row[longest], sub_array)
 
     # 5.
     bufr = codes_bufr_new_from_samples('BUFR4')
