@@ -55,10 +55,10 @@ def longest_row(rows):
     """
     number_of_rows = len(rows)
     longest = 0
-    for i in range(0, number_of_rows -1):
-        row_a = row[i]
-        row_b = row[i+1]
-        if len(row_b) > len(row_a):
+    for i in range(0, number_of_rows - 1):
+        l_a = len(rows[i])
+        l_b = len(rows[i+1])
+        if l_b > l_a:
             longest = i + 1
     return longest
   
