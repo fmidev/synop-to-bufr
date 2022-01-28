@@ -86,11 +86,15 @@ def message_encoding(input_file):
     Keys and values are separated by separate_keys_and_values module.
     Subset object has all the values from different subsets in the same array
     acording to key-name.
-    4. The bufr message sceleton is made from a sample (edition 4).
-    5. Sends the bufr sceleton and subset_array to bufr_encode to fill the bufr message.
-    6. Output filename is named by the parts from the first row of the data (output) and
+    4. separate_keys_and_values module's are_all_the_rows_similar function is used to
+    check if all the keys are same in the keys_in_each_row array. If they are, the first
+    row of key names is used. If not, the row which has most of the key_name is used,
+    which is gotten by function longest_row in separate_keys_and_values module.
+    5. The bufr message sceleton is made from a sample (edition 4).
+    6. Sends the bufr sceleton and subset_array to bufr_encode to fill the bufr message.
+    7. Output filename is named by the parts from the first row of the data (output) and
     the name of the centre.
-    7. Output file is opened, bufr message is written to it and output filename is
+    8. Output file is opened, bufr message is written to it and output filename is
     returned to main function.
     """
     rows_in_input_file = input_file.readlines()
@@ -115,20 +119,26 @@ def message_encoding(input_file):
         for j in range(0,len(values)):
             sub_array[j].append(values[j])
 
-    subset_array = subA.Subset(keys_in_each_row[0], sub_array)
-
     # 4.
-    bufr = codes_bufr_new_from_samples('BUFR4')
+    answer = separate_keys_and_values.are_all_the_rows_similar(keys_in_each_row)
+    if answer == True:
+        subset_array = subA.Subset(keys_in_each_row[0], sub_array)
+    else:
+        longest = separate_keys_and_values.longest_row(keys_in_each_row)
+        sub_array = subA.Subset(keys_in_each_row[longest], sub_array)
 
     # 5.
-    bufr_encode(bufr, subset_array)
+    bufr = codes_bufr_new_from_samples('BUFR4')
 
     # 6.
+    bufr_encode(bufr, subset_array)
+
+    # 7.
     centre = codes_get(bufr, 'bufrHeaderCentre')
     output_filename = output[0] + '_' + str(centre) + '_' + output[1] + output[2]
     output_filename = output_filename + output[3] + '.bufr'
 
-    # 7.
+    # 8.
     with open(output_filename, 'wb') as fout:
         codes_write(bufr, fout)
         codes_release(bufr)
@@ -152,11 +162,11 @@ def bufr_encode(ibufr, subs):
     codes_set(ibufr, 'observedData', 1)
     codes_set(ibufr, 'numberOfSubsets', subs.NSUB)
     codes_set(ibufr, 'compressedData', 0)
-    codes_set(ibufr, 'typicalYear', subs.YYYY[0])
-    codes_set(ibufr, 'typicalMonth', subs.MM[0])
-    codes_set(ibufr, 'typicalDay', subs.DD[0])
-    codes_set(ibufr, 'typicalHour', subs.HH24[0])
-    codes_set(ibufr, 'typicalMinute', subs.MI[0])
+    codes_set(ibufr, 'typicalYear', max(set(subs.YYYY), key = subs.YYYY.count))
+    codes_set(ibufr, 'typicalMonth', max(set(subs.MM), key = subs.MM.count))
+    codes_set(ibufr, 'typicalDay', max(set(subs.DD), key = subs.DD.count))
+    codes_set(ibufr, 'typicalHour', max(set(subs.HH24), key = subs.HH24.count))
+    codes_set(ibufr, 'typicalMinute', max(set(subs.MI), key = subs.MI.count))
     codes_set(ibufr, 'typicalSecond', 0)
     codes_set_array(ibufr, 'inputDelayedDescriptorReplicationFactor', subs.DEL)
     codes_set(ibufr, 'unexpandedDescriptors', 307080)
