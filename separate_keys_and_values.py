@@ -40,12 +40,25 @@ def are_all_the_rows_similar(rows):
     This function checks if all the rows are the same.
     """
     number_of_rows = len(rows)
-    different = True
+    answer = True
     for i in range(0, number_of_rows - 1):
         row_a = rows[i]
         row_b = rows[i+1]
         if row_a != row_b:
-            different = False
+            answer = False
 
-    return different
+    return answer
+
+def longest_row(rows):
+    """
+    This functions check the longest row from rows.
+    """
+    number_of_rows = len(rows)
+    longest = 0
+    for i in range(0, number_of_rows -1):
+        row_a = row[i]
+        row_b = row[i+1]
+        if len(row_b) > len(row_a):
+            longest = i + 1
+    return longest
   
