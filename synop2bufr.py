@@ -78,7 +78,7 @@ def read_synop(rows):
 
 def message_encoding(input_file):
     """
-    Main sends input and output files here.
+    Main sends input file here.
     1. Sends the first row of input file to read_filename to get the name for the
     output file.
     2. Calls read_synop to get keys and values from input file.
@@ -135,7 +135,9 @@ def message_encoding(input_file):
     # 8.
     with open(output_filename, 'wb') as fout:
         codes_write(bufr, fout)
-        codes_release(bufr)
+        fout.close()
+
+    codes_release(bufr)
     return output_filename
 
 def bufr_encode(ibufr, subs):
@@ -427,6 +429,11 @@ def main():
                 else:
                     sys.stderr.write(err.msg + '\n')
                 return 1
+            except Exception as err:
+                print(err)
+                return 1
+            finally:
+                synop_file.close()
     except FileNotFoundError as err:
         if VERBOSE:
             traceback.print_exc(file=sys.stderr)
