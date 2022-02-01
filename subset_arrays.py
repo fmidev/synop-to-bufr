@@ -235,7 +235,7 @@ class Subset:
         self.CH = cloud_type(self.N_CALC, miss_list, 10)
         self.CL = cloud_type(self.N_CALC, miss_list, 30)
         self.CM = cloud_type(self.N_CALC, miss_list, 20)
-        self.CLA = [miss_list, miss_list, miss_list, miss_list] 
+        self.CLA = [miss_list, miss_list, miss_list, miss_list]
 
     # 4.
         for key in k_a:
@@ -276,7 +276,7 @@ class Subset:
         self.SNOW_TOTAL = snow_depth_total(self.HH24, k_a, self.GR, self.SNOW)
         self.TMAX = temperature(self.HH24, self.TMAX06, self.TMAX18)
         self.TMIN = temperature(self.HH24, self.TMIN06, self.TMIN18)
-        self.SENSOR = height_of_sensor(self.ELANEM, self.TMAX, self.TMIN)
+        self.SENSOR = height_of_sensor(self.ELANEM, self.ELTERM, self.TMAX, self.TMIN)
         self.INSTRUMENT = instrument_type(self.NSUB)
         self.TIME_SIGNIFICANCE = time_significance(self.NSUB)
         self.TP = time_period(self.HH24, self.W1_CALC, self.TPP, self.TMAX, self.TMIN)
@@ -577,10 +577,11 @@ def height_of_base(n_list, nr1_list, cla_list, hb_list):
                     float_list.append(value_for_height_of_base(h_list[i], c_list[i]))
     return float_list
 
-def height_of_sensor(elanem_list, tmax_list, tmin_list):
+def height_of_sensor(elanem_list, elterm_list, tmax_list, tmin_list):
     """
     This function makes a list of all the sensor heights:
-        302035: 302032: for temperature and humidity measurement j = 0
+        302035: 302032: for temperature and humidity measurement j = 0, depends on:
+            elterm_list = ELTERM = height of sensor (temperature and humidity)
         302035: 302033: for visibility measurement j = 1
         302035: 302034: for precipitation measurement j = 2
         302035: j = 3
@@ -588,12 +589,9 @@ def height_of_sensor(elanem_list, tmax_list, tmin_list):
         302043: 302041: for temperature measurement j = 5, depends on:
             tmax_list = TMAX = maximum temperature
             tmin_list = TMIN = minimum temperature
-            F77 does not use values of elterm_list = ELTERM.
+            elterm_list = ELTERM = height of sensor (temperature and humidity)
         302043: 302042: for wind measurement j = 6, depends on:
             elanem_list = ELANEM
-            F77 must have a mistake with this, since there:
-            in subset 3 this is 15, not miss
-            and in subsets 16, 21 ja 26 this 12, not miss.
         302043: j = 7
     """
     float_list = []
@@ -602,12 +600,12 @@ def height_of_sensor(elanem_list, tmax_list, tmin_list):
         tmin = tmin_list[i]
         for j in range(0, 8):
             if j == 0:
-                float_list.append(2.0)
+                float_list.append(elterm_list[i])
             elif j == 5:
                 if missD in (tmax, tmin):
                     float_list.append(missD)
                 else:
-                    float_list.append(2.00)
+                    float_list.append(elterm_list[i])
             elif j == 6:
                 float_list.append(elanem_list[i])
             else:
@@ -987,6 +985,8 @@ def str2float(str_list, x):
     for i in range (0, len(str_list)):
         if str_list[i] == '-1e+100':
             float_list.append(float(str_list[i]))
+        elif x == 4 and 1.5 <= float(str_list[i]) < 3.0:
+            float_list.append(2.00)
         elif x == 34:
             float_list.append(float(str_list[i]) * 100)
         elif x == 40:
