@@ -419,7 +419,7 @@ def main():
     synop_filename = sys.argv[1]
 
     try:
-        with open(synop_filename, 'r') as synop_file:
+        with open(synop_filename, 'r', encoding="utf8") as synop_file:
             print('synop data from file: ', synop_filename)
             try:
                 bufr_filename = message_encoding(synop_file)
