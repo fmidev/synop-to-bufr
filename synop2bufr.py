@@ -89,6 +89,16 @@ def check_data(data):
         if ';' not in data[i] or '=' not in data[i] or '*' not in data[i]:
             message = 'Synop file has bad data in row ' + str(i) + '.\n'
             print_error_message(1, message)
+    for i in range(1, len(data)):
+        if ';=' in data[i] or '=;' in data[i]:
+            message = 'Synop file has bad data in row ' + str(i) + '.\n'
+            print_error_message(1, message)
+        elif ';*' in data[i] or '*;' in data[i]:
+            message = 'Synop file has bad data in row ' + str(i) + '.\n'
+            print_error_message(1, message)
+        elif '=*' in data[i] or '*=' in data[i]:
+            message = 'Synop file has bad data in row ' + str(i) + '.\n'
+            print_error_message(1, message)
 
     return data
 
@@ -161,34 +171,40 @@ def read_synop(rows):
 def message_encoding(input_file):
     """
     Main sends input file here.
-    1. Sends the first row of input file to read_filename to get the name for the
-    output file.
-    2. Calls read_synop to get keys and values from input file.
-    3. Separates keys and values to their own arrays and makes subset array objects.
+    1. Reads lines from input_file and checks (check_name) if file's first row
+    contains right parts for naming the output file. After that it checks (check_data)
+    if the synop data in input_file contains right parts for fetching the data.
+    2. Sends the first row of input file to read_filename to get the name for the
+    output file. After that it checks if output has a right amount of values for naming
+    the file.
+    3. Calls read_synop to get keys and values from input file.
+    4. Separates keys and values to their own arrays and makes subset array objects.
     Keys and values are separated by separate_keys_and_values module.
     Subset object has all the values from different subsets in the same array
     according to key-name.
-    4. separate_keys_and_values module's longest_row function is used to choose the key
+    5. separate_keys_and_values module's longest_row function is used to choose the key
     row from keys_in_each_row, which has the biggest amount of key names.
-    5. The bufr message sceleton is made from a sample (edition 4).
-    6. Sends the bufr sceleton and subset_array to bufr_encode to fill the bufr message.
-    7. Output filename is named by the parts from the first row of the data (output) and
+    6. The bufr message sceleton is made from a sample (edition 4).
+    7. Sends the bufr sceleton and subset_array to bufr_encode to fill the bufr message.
+    8. Output filename is named by the parts from the first row of the data (output) and
     the name of the centre.
-    8. Output file is opened, bufr message is written to it and output filename is
+    9. Output file is opened, bufr message is written to it and output filename is
     returned to main function.
     """
+
+    # 1.
     rows_in_input_file = input_file.readlines()
     rows_in_input_file = check_name(rows_in_input_file)
     rows_in_input_file = check_data(rows_in_input_file)
 
-    # 1.
+    # 2.
     output = read_filename(rows_in_input_file[0])
     if len(output) != 4:
         print_error_message(0, '\n')
-    # 2.
+    # 3.
     data_in = read_synop(rows_in_input_file[1:])
 
-    # 3.
+    # 4.
     keys_in_each_row = []
     sub_array = []
 
@@ -202,22 +218,22 @@ def message_encoding(input_file):
         for j in range(0,len(values)):
             sub_array[j].append(values[j])
 
-    # 4.
+    # 5.
     longest = separate_keys_and_values.longest_row(keys_in_each_row)
     subset_array = subA.Subset(keys_in_each_row[longest], sub_array)
 
-    # 5.
+    # 6.
     bufr = codes_bufr_new_from_samples('BUFR4')
 
-    # 6.
+    # 7.
     bufr = bufr_encode(bufr, subset_array)
 
-    # 7.
+    # 8.
     centre = codes_get(bufr, 'bufrHeaderCentre')
     output_filename = output[0] + '_' + str(centre) + '_' + output[1] + output[2]
     output_filename = output_filename + output[3] + '.bufr'
 
-    # 8.
+    # 9.
     with open(output_filename, 'wb') as fout:
         codes_write(bufr, fout)
         fout.close()
