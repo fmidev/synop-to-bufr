@@ -226,10 +226,20 @@ def message_encoding(input_file):
     bufr = codes_bufr_new_from_samples('BUFR4')
 
     # 7.
-    bufr = bufr_encode(bufr, subset_array)
+    try:
+        bufr = bufr_encode(bufr, subset_array)
+    except CodesInternalError as err:
+        if VERBOSE:
+            traceback.print_exc(file=sys.stderr)
+        else:
+            sys.stderr.write(err.msg + '\n')
+        codes_release(bufr)
+        sys.exit(1)
 
     # 8.
     centre = codes_get(bufr, 'bufrHeaderCentre')
+    if centre == 86:
+        centre = 'EFKL'
     output_filename = output[0] + '_' + str(centre) + '_' + output[1] + output[2]
     output_filename = output_filename + output[3] + '.bufr'
 
