@@ -12,10 +12,90 @@ import separate_keys_and_values
 
 VERBOSE = 1
 
+def print_error_message(x, text):
+    """
+    This function prints out error message and stops program.
+        If x = 0: Error is with naming the bufr file according to the first row of
+        synop data file.
+        If x = 1: Error is with the data structure in synop file.
+        Function gets argument text, which adds information to the error text.
+    """
+    print('\nError in synop data:\n')
+    if x == 0:
+        print('Error with naming the bufr file.')
+        print('The first row of synop data shoud be: ')
+        print('FILENAME: /path/to/file/TTAAII_year-month-day_hour:minute_something.dat')
+        print(text)
+    elif x == 1:
+        print('Row in synop data with n data values should be: ')
+        print('keyname1=value1;keyname2=value2;keyname3=value3;...;keynamen=valuen*')
+        print(text)
+    sys.exit(1)
+
+def check_name(data):
+    """
+    This function check if the first row in synop data (data) is written correctly.
+    """
+    try:
+        test = data[0]
+    except IndexError:
+        print_error_message(0, 'Synop file is empty!\n')
+
+    if 'FILENAME: ' not in data[0]:
+        print_error_message(0, '"Filename:  " is missing!\n')
+    elif '.dat' not in data[0]:
+        print_error_message(0, '".dat" is missing!\n')
+    elif '_' not in data[0]:
+        print_error_message(0, '"_" are missing!\n')
+
+    test = data[0].split('/')
+    test = test[len(test) - 1].split('_')
+    if len(test) < 4:
+        print_error_message(0, 'Amount of "_" is less than 3!\n')
+    elif '-' not in test[1]:
+        print_error_message(0, '"-" or "_" in wrong place!\n')
+    elif ':' not in test[2]:
+        print_error_message(0, '":" not in right place!\n')
+
+    day = test[1].split('-')
+    time = test[2].split(':')
+
+    if len(day) != 3:
+        print_error_message(0, '"year-month-day" is wrong!\n')
+    elif len(time) !=2:
+        print_error_message(0, '"hour:minute" is wrong!\n')
+    try:
+        int(day[0])
+        int(day[1])
+        int(day[2])
+        int(time[0])
+        int(time[1])
+    except ValueError:
+        print_error_message(0, 'year, month, day, hour and minute should be integers!\n')
+
+    return data
+
+def check_data(data):
+    """
+    This function checks if the data section in synop file is written correctly.
+    Argument data is the data in synop file.
+    """
+    try:
+        data[1]
+    except IndexError:
+        print_error_message(1, 'Synop file seems not to have any data.\n')
+
+    for i in range(1, len(data)):
+        if ';' not in data[i] or '=' not in data[i] or '*' not in data[i]:
+            message = 'Synop file has bad data in row ' + str(i) + '.\n'
+            print_error_message(1, message)
+
+    return data
+
 def read_filename(row):
     """
     Separates the 1st row (row) of data to get the parts needed to name the output file.
-        1. Splits the first row from ":" -> [some text, filepath]
+        1. Splits the first row from ":" -> [some text, file path]
         2. Splits the path -> [path, to, the, file] and selects the last part (file).
         3. Splits filename from, "_" and selects the right parts to name the file.
         4. The second value (year-month-day) is split from "-" and the day is selected.
@@ -87,7 +167,7 @@ def message_encoding(input_file):
     3. Separates keys and values to their own arrays and makes subset array objects.
     Keys and values are separated by separate_keys_and_values module.
     Subset object has all the values from different subsets in the same array
-    acording to key-name.
+    according to key-name.
     4. separate_keys_and_values module's longest_row function is used to choose the key
     row from keys_in_each_row, which has the biggest amount of key names.
     5. The bufr message sceleton is made from a sample (edition 4).
@@ -98,10 +178,13 @@ def message_encoding(input_file):
     returned to main function.
     """
     rows_in_input_file = input_file.readlines()
-    input_file.close()
+    rows_in_input_file = check_name(rows_in_input_file)
+    rows_in_input_file = check_data(rows_in_input_file)
 
     # 1.
     output = read_filename(rows_in_input_file[0])
+    if len(output) != 4:
+        print_error_message(0, '\n')
     # 2.
     data_in = read_synop(rows_in_input_file[1:])
 
@@ -127,7 +210,7 @@ def message_encoding(input_file):
     bufr = codes_bufr_new_from_samples('BUFR4')
 
     # 6.
-    bufr_encode(bufr, subset_array)
+    bufr = bufr_encode(bufr, subset_array)
 
     # 7.
     centre = codes_get(bufr, 'bufrHeaderCentre')
@@ -409,6 +492,7 @@ def bufr_encode(ibufr, subs):
         # Temperature change over specified period
 
     codes_set(ibufr, 'pack', 1)  # Required to encode the keys back in the data section
+    return ibufr
 
 def main():
     """
@@ -432,7 +516,10 @@ def main():
                     sys.stderr.write(err.msg + '\n')
                 return 1
             except Exception as err:
-                print(err)
+                if VERBOSE:
+                    traceback.print_exc(file=sys.stderr)
+                else:
+                    print(err)
                 return 1
             finally:
                 synop_file.close()
