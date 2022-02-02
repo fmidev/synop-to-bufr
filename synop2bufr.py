@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 """
 synop2bufr.py is the main program which converts synop data to bufr message (edition 4).
 Run program by command: python3 synop2bufr.py name_of_the_synop_file.dat
