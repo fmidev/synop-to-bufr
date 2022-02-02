@@ -237,10 +237,8 @@ def message_encoding(input_file):
         sys.exit(1)
 
     # 8.
-    centre = codes_get(bufr, 'bufrHeaderCentre')
-    if centre == 86:
-        centre = 'EFKL'
-    output_filename = output[0] + '_' + str(centre) + '_' + output[1] + output[2]
+    centre = codes_get_string(bufr, 'bufrHeaderCentre')
+    output_filename = output[0] + '_' + str(centre.upper()) + '_' + output[1] + output[2]
     output_filename = output_filename + output[3] + '.bufr'
 
     # 9.
