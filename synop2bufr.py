@@ -353,13 +353,13 @@ def bufr_encode(ibufr, subs):
         # 302004: 20010, 8002, 20011, 20013, 20012, 20012, 20012
             # cloud cover
             # vertical significance
-            # cloud amounth
+            # cloud amount
             # height of base of cloud
             # cloud type
         # 101000, 31001
         # 302005: 8002, 20011, 20012, 20013
             # vertical significance
-            # cloud amounth
+            # cloud amount
             # cloud type
             # height of base of cloud
 
@@ -431,8 +431,8 @@ def bufr_encode(ibufr, subs):
 
         # Sunshine data (from 1 hour and 24-hour period)
         # 302039: 4024, 14031 (Not included in the data)
-            # Time period or displacement (in hours)        data(54)
-            # Total sunshine                                data(55)
+            # Time period or displacement (in hours)
+            # Total sunshine
 
         # Precipitation measurement
         # 302040: 7032, 102002, 4024, 13011
@@ -448,7 +448,7 @@ def bufr_encode(ibufr, subs):
             # Height of sensor above local ground
             # Time period or displacement
             # Time period or displacement
-            # Maximum temperature, at height and over periodspecified
+            # Maximum temperature, at height and over period specified
             # Time period or displacement
             # Time period or displacement
             # Minimum temperature, at height and over period specified
