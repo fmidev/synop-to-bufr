@@ -1,11 +1,11 @@
 """
-This module separates keys and values.
+This module separates the keys and the values.
 """
 from eccodes import CODES_MISSING_DOUBLE
 
 def get_keys(row_with_key_value_pairs):
     """
-    This funktion gets the keys and sets them in a array
+    This function gets the keys and sets them in an array.
     Input "row_with_key_value_pairs" is one observation,
     which includes key/value pairs.
     """
@@ -20,7 +20,7 @@ def get_keys(row_with_key_value_pairs):
 
 def get_values(row_with_key_value_pairs):
     """
-    This funktion gets the values and sets them in an array.
+    This function gets the values and sets them in an array.
     Input "row_with_key_value_pairs" is one observation,
     which includes key/value pairs.
     """
@@ -51,7 +51,7 @@ def are_all_the_rows_similar(rows):
 
 def longest_row(rows):
     """
-    This functions check the longest row from rows.
+    This function checks the longest row from the rows.
     """
     number_of_rows = len(rows)
     longest = 0

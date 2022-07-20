@@ -6,21 +6,20 @@ from eccodes import CODES_MISSING_DOUBLE as missD
 
 class Subset:
     """
-    This class makes keyname objects with key names that are mostly used in synop
-    data. All the values with same keyname are placed into the same object as an array.
+    This class makes key name objects with key names that are mostly used in synop
+    data. All the values with the same key name are placed into the same object as an array.
     The values are modified in different functions according to Codes manual.
         1. At first Subset class makes all the values, which are not dependent
-        on any other objects to be missing. Only the number of subsets (NSUB) is given.
-        2. The values are read form v_a, and value is placed in keyname object acording
-        keyname's index position. Values that don't depend on any other are given first.
-        As an exception, block number and sation number are given acording to WMO:
+        on any other objects, to be missing. Only the number of subsets (NSUB) is given.
+        2. The values are read form v_a, and the value is placed in a key name object according to
+        the key name's index position. Values that don't depend on any other are given first.
+        As an exception, block number and station number are given according to WMO:
             A 5-digit number yyxxx: the first 2 digits (yy) are called a block number
-            (for example, 02 is for Finland and Sweden), the last 3 digits (xxx) are
-            called a station number, which tells the id of the station.
-        3. After that, values that depend on N_CALC are set to missing.
+            and the last 3 digits (xxx) are called a station number.
+        3. After that, values that depend on N_CALC are set to be missing.
         4. Values that depend only on N_CALC (cloud cover total) are given.
-        5. The rest of all the needed values are given.
-        6. Functions which gives the right values to bufr message, are placed below.
+        5. The rest of the values are given.
+        6. Different functions give the right values to the bufr message.
     """
     # 1.
     def __init__(self, key_array, value_array):
@@ -290,7 +289,7 @@ class Subset:
 
 def vertical_significance(n_list, nh_list, cl_list, cm_list):
     """
-    This function calculates vertical significance for sequence 302004. It depends on:
+    This function calculates the vertical significance for the sequence 302004. It depends on:
         n_list = N_CALC = cloud cover total
         nh_list = NH_CALC = cloud amount
         cl_list = CL = cloud type (low clouds)
@@ -316,18 +315,18 @@ def vertical_significance(n_list, nh_list, cl_list, cm_list):
 
 def vertical_significance_total(aws, del_list, vs_list , cla_list):
     """
-    This function makes a total list of vertical significance in 307080:
-        302004: j = 0, values are made in function vertical_significance = vs_list.
+    This function makes a total list of the vertical significance in 307080:
+        302004: j = 0, values are made in the function vertical_significance = vs_list.
         302005: j > 0 and j <= nr1, depends on:
-            del_list = DEL = delayed replicatoin, which includes
-            nr1 = NR1 = number of repetitions of sequance 302005.
+            del_list = DEL = delayed replication, which includes
+            nr1 = NR1 = number of repetitions of sequence 302005.
             aws = automatic station (=1) or manual station (=0)
             cla_list = [CLA2, CLA3, CLA4, CLA5] = cloud amount list in different layers.
         302036: nr1 < j <= nr2 depends on:
-            del_list = DEL = delayed replicatoin, which includes
-            nr2 = NR2 = number of repetitions of sequance 302036.
+            del_list = DEL = delayed replication which includes
+            nr2 = NR2 = number of repetitions of sequence 302036.
         302047: j > nr2, required from land stations mainly in the tropics.
-        8002: j > nr2 + 1, Set to missing to cancel the previous value.
+        8002: j > nr2 + 1, Set to be missing to cancel the previous value.
     """
     int_list = []
     list2 = cla_list[0]
@@ -363,12 +362,12 @@ def vertical_significance_total(aws, del_list, vs_list , cla_list):
 
 def cloud_amount(nr2_list, list1, cla_list):
     """
-    This funtion makes a total list of cloud amount:
+    This function makes a total list of the cloud amount:
         302004: j = 0. Depends on list1 = NH_CALC = cloud amount.
         302005: j = 1, 2, 3, 4. Depends on:
             cla_list = [CLA2, CLA3, CLA4, CLA5] = cloud amount list in different layers.
-        302036: j > 5. Number of cloud amount depends on the
-            nr2_list = NR2 = number of repetitions of sequance 302036.
+        302036: j > 5. Number of the cloud amount depends on the
+            nr2_list = NR2 = number of repetitions of sequence 302036.
     """
     int_list = []
     list2 = cla_list[0]
@@ -405,11 +404,11 @@ def cloud_amount(nr2_list, list1, cla_list):
 
 def value_for_cloud_type(x, y):
     """
-    This function gets right value for cloud type. x is the cloud type id:
+    This function gets the right value for the cloud type. x is the cloud type id:
         for CL x = 30
         for CM x = 20
         for CH x = 10
-    y is either the data value of cloud type (string) or value of cloud cover (integer).
+    y is either the data value of the cloud type (string) or the value of the cloud cover (integer).
     """
     value = int(y) + x
     if y == 113:
@@ -425,7 +424,7 @@ def value_for_cloud_type(x, y):
 
 def cloud_type(n_list, str_list, x):
     """
-    This function calculates cloud type 20012 for sequence 302004. It depends on:
+    This function calculates the cloud type 20012 for the sequence 302004. It depends on:
         n_list = N_CALC = cloud cover total
         str_list = values of cloud type
         x = id of cloud type
@@ -448,12 +447,12 @@ def cloud_type_total(del_list, cl_list, cm_list, ch_list):
         cm_list = CM = cloud type (middle cloud)
         ch_list = CH = cloud type (high cloud)
     302005: j > 2. Depends on:
-        del_list = DEL = delayed replicatoin, which includes
-        nr1 = NR1 = number of repetitions of sequance 302005.
+        del_list = DEL = delayed replication, which includes
+        nr1 = NR1 = number of repetitions of sequence 302005.
     302036: j > 2. Number of cloud types depends on the
-        del_list = DEL = delayed replicatoin, which includes
-        nr2 = NR2 = number of repetitions of sequance 302036.
-    302048: given if value of cloud type is given for cloud elevation
+        del_list = DEL = delayed replication, which includes
+        nr2 = NR2 = number of repetitions of sequence 302036.
+    302048: given if the value of the cloud type is given for the cloud elevation
     """
     int_list = []
     m = 0
@@ -475,7 +474,7 @@ def cloud_type_total(del_list, cl_list, cm_list, ch_list):
 
 def number_of_repetition(cla_list):
     """
-    Number of repetition in sequance 302005. Depends on:
+    Number of repetitions in sequence 302005. Depends on:
         cla_list = [CLA2, CLA3, CLA4, CLA5] = cloud amount list in different layers.
     """
     list2 = cla_list[0]
@@ -501,7 +500,7 @@ def number_of_repetition(cla_list):
 
 def str2int_cloud_amount(n_list, str_list, x):
     """
-    Function converts cloud amount data from string to integer.
+    Function converts the cloud amount data from string to integer.
         302004: x = 28, the integer value depends on:
             n_list = N_CALC = cloud cover total
             str_list = values in data
@@ -532,7 +531,7 @@ def str2int_cloud_amount(n_list, str_list, x):
 
 def value_for_height_of_base(h_value, c_value):
     """
-    Funciton chooses value for height of base. Depends on:
+    Function chooses value for the height of base. Depends on:
         h_value = value of height of base
         c_value = value of cloud amount.
     """
@@ -549,7 +548,7 @@ def height_of_base(n_list, nr1_list, cla_list, hb_list):
             n_list = N_CALC = cloud cover total
             hb_list[0] = HB[0] = NH_CALC ) height of base data.
         302005: j >= 1. Depends on:
-            nr1_list = NR1 = number of repetition of sequence 302005.
+            nr1_list = NR1 = number of repetitions of the sequence 302005.
             cla_list = [CLA2, CLA3, CLA4, CLA5] = cloud amount list in
                 different layers.
             rest of hb_list = [CLHB2, CLHB3, CLHB4, CLHB5] = height of base
@@ -628,7 +627,7 @@ def r24h_total(hh_list, r24h_list):
 
 def ground_data(key_list, hh_list, list1, list2):
     """
-    This function chooses ground data from GROUND06 and GROUND, and modifies it.
+    This function chooses ground data from GROUND06 and GROUND and modifies it.
         If key_list includes key "GROUND06" and hh_list = HH24 is 6, the values of
         GROUND06 (list2) are used. If not, then values of GROUND (list1) are used.
     """
@@ -688,10 +687,10 @@ def snow_depth_total(hh_list, key_list, gr_list, snow_list):
 def replication(ns, nr1_list, nr2_list):
     """
     Functions combines the 2 replications, which are used to make
-    the array for delaid replication. It depends on:
+    the array for delayed replication. It depends on:
         ns = NSUB = number of subsets
-        nr1_list = NR1 = number of replication in sequence 302005
-        nr2_list = NR2 = number of replication in sequence 302036
+        nr1_list = NR1 = number of replications in the sequence 302005
+        nr2_list = NR2 = number of replications in the sequence 302036
     """
     int_list = []
     for i in range(0, ns):
@@ -704,10 +703,10 @@ def precipitation_total(st_list, r_h_list):
     Function makes a total list of precipitation 13011: It depends on:
         st_list = STATION_TYPE = tells if the station is automatic of not.
         r_h_list = [R_1H_AWS, R_1H_MAN, R_12H_AWS, R_12H_MAN]
-            r12hm_list = R_12H_MAN = Precipitation past 12 hours in manual station
-            r1hm_list = R_1H_MAN = Precipitation past 1 hour in manual station
-            r12ha_list = R_12H_AWS = Precipitation past 12 hours in automatic station
-            r1ha_list = R_1H_AWS = Precipitation past 1 hour in automatic station
+            r12hm_list = R_12H_MAN = precipitation past 12 hours in manual station
+            r1hm_list = R_1H_MAN = precipitation past 1 hour in manual station
+            r12ha_list = R_12H_AWS = precipitation past 12 hours in automatic station
+            r1ha_list = R_1H_AWS = precipitation past 1 hour in automatic station
     """
     float_list = []
     r1ha_list = r_h_list[0]
@@ -725,7 +724,7 @@ def precipitation_total(st_list, r_h_list):
 
 def temperature(hh_list, t1_list, t2_list):
     """
-    This function is used to choose right values for temperature. It depends on:
+    This function is used to choose the right values for temperature. It depends on:
         hh_list = HH24 = hour of measurement
         t1_list = TMAX06 or TMIN06
         t2_list = TMAX18 or TMIN18
@@ -742,7 +741,7 @@ def temperature(hh_list, t1_list, t2_list):
 
 def number_of_repetition2(ns):
     """
-    This function gives delaid repetition for 302036.
+    This function gives delayed repetition for 302036.
     """
     int_list = []
     i = 0
@@ -753,7 +752,7 @@ def number_of_repetition2(ns):
 
 def precipitation_time_period(precipitation_list):
     """
-    This function gives time period values for precipitation. It depends on:
+    This function gives the time period values for the precipitation. It depends on:
         precipitation_list = PRECIPITATION = total list of precipitation.
     """
     int_list = []
@@ -768,9 +767,9 @@ def precipitation_time_period(precipitation_list):
 
 def past_weather_time_period(w1, hh):
     """
-    This function retuns time period in sequance 302038. It depends on:
+    This function returns the time period in the sequence 302038. It depends on:
         w1 = W1 = past weather 1
-        hh = HH24 = hour of measusrement
+        hh = HH24 = hour of measurement
     """
     value = miss
     h = [0, 5, 6, 11, 12, 17, 18, 23]
@@ -783,8 +782,8 @@ def past_weather_time_period(w1, hh):
 
 def temperature_time_period(x, tmax, tmin):
     """
-    This function gives time period values for sequance 302041. It depends on:
-        x = id of time preriod
+    This function gives the time period values for the sequence 302041. It depends on:
+        x = id of time period
         tmax = value of maximum temperature
         tmin = value of minimum temperature
     """
@@ -806,7 +805,7 @@ def temperature_time_period(x, tmax, tmin):
 
 def time_period(hh_list, w1_list, tp_list, tmax_list, tmin_list):
     """
-    This funkction gives all the time period values. It depends on:
+    This function gives all the time period values. It depends on:
         302038 [h] j = 0
             hh_list = HH24 = hour of measurement
             w1_list = W1_CALC = past weather 1
@@ -872,7 +871,7 @@ def time_significance(ns):
 
 def weather(st_list, name, key_list, man_list, aws_list):
     """
-    Function chooses values for present and past weather. Values are chosen between
+    Function chooses values for present and past weather. The values are chosen between
     manual (man_list) and automatic (aws_list) observations. It depends on:
         st_list = STATION_TYPE
         key_list, if key name (name) is in the data.
@@ -915,7 +914,7 @@ def wind_gust_speed(list1, list2):
 
 def precipitation(str_value):
     """
-    Function retuns value for precipitation. It depends on str_value = given data value.
+    Function returns a value for precipitation. It depends on str_value = given data value.
     """
     value = str_value
     if str_value == '0':
@@ -926,7 +925,7 @@ def precipitation(str_value):
 
 def make_missing(x):
     """
-    This function gives right missing values according to value's id (x)
+    This function gives the right missing values according to the value's id (x).
     """
     value = miss
     if 22 <= x <= 23:
@@ -945,7 +944,7 @@ def make_missing(x):
 
 def not_missing(str_value, x):
     """
-    Function gives right values according to given value (str_value) and its id (x).
+    Function gives the right values according to given value (str_value) and its id (x).
     """
     value = int(str_value)
     if x == 29:
@@ -961,8 +960,8 @@ def not_missing(str_value, x):
 def str2int(str_list, x):
     """
     This function makes a string list (str_list) to a integer list (int_list).
-        x represents the id of different values. Values are converted from string to
-        integer depending on x. Before this function, missing values = '/' are changed
+        x represents the id of the different values. The values are converted from string to
+        integer depending on the x. Before this function, missing values = '/' are changed
         to be '-1e+100', which in eccodes is the missing value of float type value.
         It is changed to be missing value of integer type value.
     """
@@ -977,8 +976,8 @@ def str2int(str_list, x):
 def str2float(str_list, x):
     """
     This function makes a string list (str_list) to a float list (float_list).
-        x represents the id of different values. Values are converted from string to
-        float depending on x. Before this function, missing values = '/' are changed
+        x represents the id of the different values. The values are converted from string to
+        float depending on the x. Before this function, missing values = '/' are changed
         to be '-1e+100' which in eccodes is the missing value of float type value.
     """
     float_list = []

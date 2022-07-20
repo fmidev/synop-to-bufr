@@ -14,16 +14,16 @@ VERBOSE = 1
 
 def print_error_message(x, text):
     """
-    This function prints out error message and stops program.
+    This function prints out an error message and stops the program.
         If x = 0: Error is with naming the bufr file according to the first row of
-        synop data file.
-        If x = 1: Error is with the data structure in synop file.
-        Function gets argument text, which adds information to the error text.
+        the synop data file.
+        If x = 1: Error is in the data structure of the synop file.
+        Function gets the argument text, which adds information to the error text.
     """
     print('\nError in synop data:\n')
     if x == 0:
         print('Error with naming the bufr file.')
-        print('The first row of synop data shoud be: ')
+        print('The first row of synop data should be: ')
         print('FILENAME: /path/to/file/TTAAII_year-month-day_hour:minute_something.dat')
         print(text)
     elif x == 1:
@@ -53,9 +53,9 @@ def check_name(data):
     if len(test) < 4:
         print_error_message(0, 'Amount of "_" is less than 3!\n')
     elif '-' not in test[1]:
-        print_error_message(0, '"-" or "_" in wrong place!\n')
+        print_error_message(0, '"-" or "_" in a wrong place!\n')
     elif ':' not in test[2]:
-        print_error_message(0, '":" not in right place!\n')
+        print_error_message(0, '":" not in a right place!\n')
 
     day = test[1].split('-')
     time = test[2].split(':')
@@ -77,8 +77,8 @@ def check_name(data):
 
 def check_data(data):
     """
-    This function checks if the data section in synop file is written correctly.
-    Argument data is the data in synop file.
+    This function checks if the data section in the synop file is written correctly.
+    Argument data is the data in the synop file.
     """
     try:
         data[1]
@@ -87,17 +87,17 @@ def check_data(data):
 
     for i in range(1, len(data)):
         if ';' not in data[i] or '=' not in data[i] or '*' not in data[i]:
-            message = 'Synop file has bad data in row ' + str(i) + '.\n'
+            message = 'Synop file has wrongly written data in row ' + str(i) + '.\n'
             print_error_message(1, message)
     for i in range(1, len(data)):
         if ';=' in data[i] or '=;' in data[i]:
-            message = 'Synop file has bad data in row ' + str(i) + '.\n'
+            message = 'Synop file has wrongly written data in row ' + str(i) + '.\n'
             print_error_message(1, message)
         elif ';*' in data[i] or '*;' in data[i]:
-            message = 'Synop file has bad data in row ' + str(i) + '.\n'
+            message = 'Synop file has wrongly written data in row ' + str(i) + '.\n'
             print_error_message(1, message)
         elif '=*' in data[i] or '*=' in data[i]:
-            message = 'Synop file has bad data in row ' + str(i) + '.\n'
+            message = 'Synop file has wrongly written data in row ' + str(i) + '.\n'
             print_error_message(1, message)
 
     return data
@@ -107,7 +107,7 @@ def read_filename(row):
     Separates the 1st row (row) of data to get the parts needed to name the output file.
         1. Splits the first row from ":" -> [some text, file path]
         2. Splits the path -> [path, to, the, file] and selects the last part (file).
-        3. Splits filename from, "_" and selects the right parts to name the file.
+        3. Splits filename from "_" and selects the right parts to name the file.
         4. The second value (year-month-day) is split from "-" and the day is selected.
         5. The 3rd value (hour:minute) is also split from ":".
     """
@@ -140,7 +140,7 @@ def read_filename(row):
 
 def read_synop(rows):
     """
-    Separates synop data to key and value arrays:
+    Separates the synop data to key and value arrays:
         1. Splits rows from ";", -> [ [key=value], [key=value], ...]
         2. Splits: [key=value] in each row to [key, value] and the last value from "*".
     """
@@ -170,26 +170,26 @@ def read_synop(rows):
 
 def message_encoding(input_file):
     """
-    Main sends input file here.
-    1. Reads lines from input_file and checks (check_name) if file's first row
-    contains right parts for naming the output file. After that it checks (check_data)
-    if the synop data in input_file contains right parts for fetching the data.
-    2. Sends the first row of input file to read_filename to get the name for the
-    output file. After that it checks if output has a right amount of values for naming
+    Main sends the input file here.
+    1. Reads the lines from the input_file and checks (check_name) if the file's first row
+    contains the right parts for naming the output file. After that it checks (check_data)
+    if the synop data in the input_file contains the right parts for fetching the data.
+    2. Sends the first row of the input file to read_filename to get the name for the
+    output file. After that it checks if the output has a right number of values for naming
     the file.
-    3. Calls read_synop to get keys and values from input file.
-    4. Separates keys and values to their own arrays and makes subset array objects.
-    Keys and values are separated by separate_keys_and_values module.
-    Subset object has all the values from different subsets in the same array
-    according to key-name.
+    3. Calls read_synop to get the keys and the values from the input file.
+    4. Separates the keys and the values to their own arrays and makes subset array objects.
+    The keys and the values are separated by separate_keys_and_values module.
+    The subset object has all the values from different subsets in the same array
+    according to the key-name.
     5. separate_keys_and_values module's longest_row function is used to choose the key
-    row from keys_in_each_row, which has the biggest amount of key names.
-    6. The bufr message sceleton is made from a sample (edition 4).
-    7. Sends the bufr sceleton and subset_array to bufr_encode to fill the bufr message.
-    8. Output filename is named by the parts from the first row of the data (output) and
+    row from keys_in_each_row, which has the biggest number of key names.
+    6. The bufr message skeleton is made from a sample (edition 4).
+    7. Sends the bufr skeleton and the subset_array to bufr_encode to fill the bufr message.
+    8. The output filename is named by the parts of the first row of the data (output) and
     the name of the centre.
-    9. Output file is opened, bufr message is written to it and output filename is
-    returned to main function.
+    9. The output file is opened, the bufr message is written to it, and the output filename is
+    returned to the main function.
     """
 
     # 1.
@@ -251,8 +251,8 @@ def message_encoding(input_file):
 
 def bufr_encode(ibufr, subs):
     """
-    Encodes a bufr message (ibufr) by subset_array object (subs).
-    Subser_array object is used to get all the values in each subset.
+    Encodes a bufr message (ibufr) by the subset_array object (subs).
+    The subser_array object includes all the values in each subset.
     """
     codes_set(ibufr, 'edition', 4)
     codes_set(ibufr, 'masterTableNumber', 0)
@@ -330,7 +330,7 @@ def bufr_encode(ibufr, subs):
 
         # Temperature and humidity data
         # 302032: 7032, 12101, 12103, 13003
-            # Height of sensor above local ground F77 -> 2.0
+            # Height of sensor above local ground
             # Temperature/air temperature
             # Dewpoint temperature
             # Relative humidity
@@ -466,17 +466,17 @@ def bufr_encode(ibufr, subs):
 
         # Wind data
         # 302042: 7032, 2002, 8021, 4025, 11001, 11002, 8021, 103002, 4025, 11043, 11041
-            # Height of sensor above local ground               # F77 -> elenem
-            # Type of instrumentation for wind measurement      # F77 -> 8
-            # Time significance = 2 Time averaged               # F77 -> 2
-            # Time period or displacement = –10 minutes,        # F77 -> -10
+            # Height of sensor above local ground
+            # Type of instrumentation for wind measurement
+            # Time significance = 2 Time averaged
+            # Time period or displacement = –10 minutes,
                 # or number of minutes after a significant change
                 # of wind (same name but different descriptor 4024)
             # Wind direction
             # Wind speed
-            # Time significance = missing value                 # F77 -> missing
+            # Time significance = missing value
             # Replicate 3 descriptors 2 times
-            # Time period or displacement (in minutes)          # F77 -> -10 and -60
+            # Time period or displacement (in minutes)
             # Maximum wind gust direction
             # Maximum wind gust speed
 
@@ -520,8 +520,8 @@ def bufr_encode(ibufr, subs):
 
 def main():
     """
-    Main function gets input file from command line and sends it to message_encode
-    function which writes the bufr into the output file named by input file information.
+    The main function gets the input file from command line and sends it to message_encode
+    function which writes the bufr into the output file named by the input file information.
     """
     if len(sys.argv) < 2:
         print('Usage: ', sys.argv[0], ' synop_filename', file=sys.stderr)
