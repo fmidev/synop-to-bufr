@@ -1,25 +1,27 @@
 """
 This module makes subset objects by different functions and Subset class.
 """
+import sys
 from eccodes import CODES_MISSING_LONG as miss
 from eccodes import CODES_MISSING_DOUBLE as missD
 
 class Subset:
     """
-    This class makes key name objects with key names that are mostly used in synop
-    data. All the values with the same key name are placed into the same object as an array.
+    This class makes keyname objects with key names that are mostly used in synop
+    data. All the values with same keyname are placed into the same object as an array.
     The values are modified in different functions according to Codes manual.
         1. At first Subset class makes all the values, which are not dependent
-        on any other objects, to be missing. Only the number of subsets (NSUB) is given.
-        2. The values are read form v_a, and the value is placed in a key name object according to
-        the key name's index position. Values that don't depend on any other are given first.
-        As an exception, block number and station number are given according to WMO:
+        on any other objects to be missing. Only the number of subsets (NSUB) is given.
+        2. The values are read form v_a, and value is placed in keyname object acording
+        keyname's index position. Values that don't depend on any other are given first.
+        As an exception, block number and sation number are given acording to WMO:
             A 5-digit number yyxxx: the first 2 digits (yy) are called a block number
-            and the last 3 digits (xxx) are called a station number.
-        3. After that, values that depend on N_CALC are set to be missing.
+            (for example, 02 is for Finland and Sweden), the last 3 digits (xxx) are
+            called a station number, which tells the id of the station.
+        3. After that, values that depend on N_CALC are set to missing.
         4. Values that depend only on N_CALC (cloud cover total) are given.
-        5. The rest of the values are given.
-        6. Different functions give the right values to the bufr message.
+        5. The rest of all the needed values are given.
+        6. Functions which gives the right values to bufr message, are placed below.
     """
     # 1.
     def __init__(self, key_array, value_array):
@@ -27,8 +29,10 @@ class Subset:
         v_a = value_array
         self.NSUB = len(v_a[0])
         miss_list = []
+        miss_char_list = []
         for i in range(0, self.NSUB):
             miss_list.append('-1e+100')
+            miss_char_list.append('')
         self.TTAAII = miss_list
         self.ELANEM = str2float(miss_list, 1)
         self.ELBARO = str2float(miss_list, 2)
@@ -39,6 +43,10 @@ class Subset:
         self.STATION_NAME = miss_list
         self.STATION_TYPE = str2int(miss_list, 8)
         self.WMON = miss_list
+        self.WSI_IDS = str2int(miss_list, 0)
+        self.WSI_IDI = str2int(miss_list, 0)
+        self.WSI_INR = str2int(miss_list, 0)
+        self.WSI_LID = miss_char_list
         self.BLOCK_NUMBER = str2int(self.WMON, 64)
         self.STATION_NUMBER = str2int(self.WMON, 65)
         self.N_CALC = str2int(miss_list, 29)
@@ -49,6 +57,7 @@ class Subset:
         self.CLHB5 = str2float(miss_list, 19)
         self.CLHB = [self.HH_CALC, self.CLHB2, self.CLHB3, self.CLHB4, self.CLHB5]
         self.DD = str2int(miss_list, 21)
+        self.GLOB = str2float(miss_list, 43)
         self.GROUND = miss_list
         self.GROUND06 = str2int(miss_list, 23)
         self.HH24 = str2int(miss_list, 24)
@@ -70,6 +79,7 @@ class Subset:
         self.SNOW18 = str2float(miss_list, 41)
         self.SNOW_AWS = str2float(miss_list, 41)
         self.SNOW = [self.SNOW06, self.SNOW18, self.SNOW_AWS]
+        self.SUND = str2int(miss_list, 42)
         self.SYNOP = miss_list
         self.T = str2float(miss_list, 50)
         self.TD = str2float(miss_list, 50)
@@ -118,6 +128,11 @@ class Subset:
                 self.WMON = v_a[k_a.index(key)]
                 self.BLOCK_NUMBER = str2int(self.WMON, 64)
                 self.STATION_NUMBER = str2int(self.WMON, 65)
+            elif key == 'WSI':
+                self.WSI_IDS = get_wigos(v_a[k_a.index(key)], 0)
+                self.WSI_IDI = get_wigos(v_a[k_a.index(key)], 1)
+                self.WSI_INR = get_wigos(v_a[k_a.index(key)], 2)
+                self.WSI_LID = get_wigos(v_a[k_a.index(key)], 3)
             elif key =='N_CALC':
                 self.N_CALC = str2int(v_a[k_a.index(key)], 29)
             elif key == 'HH_CALC':
@@ -137,6 +152,8 @@ class Subset:
                 self.CLHB[4] = self.CLHB5
             elif key == 'DD':
                 self.DD = str2int(v_a[k_a.index(key)], 21)
+            elif key == 'GLOB':
+                self.GLOB = str2float(v_a[k_a.index(key)], 43)
             elif key == 'GROUND':
                 self.GROUND = str2int(v_a[k_a.index(key)], 22)
             elif key == 'GROUND06':
@@ -182,6 +199,8 @@ class Subset:
             elif key == 'SNOW_AWS':
                 self.SNOW_AWS = str2float(v_a[k_a.index(key)], 41)
                 self.SNOW[2] = self.SNOW_AWS
+            elif key == 'SUND':
+                self.SUND = str2int(str2float(v_a[k_a.index(key)], 42), 42)
             elif key == 'SYNOP':
                 self.SYNOP = v_a[k_a.index(key)]
             elif key == 'T':
@@ -261,8 +280,10 @@ class Subset:
 
     # 5.
         self.VS = vertical_significance(self.N_CALC, self.NH_CALC, self.CL, self.CM)
-        self.NR1 = number_of_repetition(self.CLA)
+        self.NR1 = number_of_repetition1(self.CLA)
         self.NR2 = number_of_repetition2(self.NSUB)
+        self.GLOB = global_radiation(self.GLOB, self.NSUB)
+        self.SUND = sunshine(self.SUND, self.NSUB)
         self.DEL = replication(self.NSUB, self.NR1, self.NR2)
         self.CLOUD_TYPE = cloud_type_total(self.DEL, self.CL, self.CM, self.CH)
         self.CLA_TOTAL = cloud_amount(self.NR2, self.NH_CALC, self.CLA)
@@ -278,7 +299,8 @@ class Subset:
         self.SENSOR = height_of_sensor(self.ELANEM, self.ELTERM, self.TMAX, self.TMIN)
         self.INSTRUMENT = instrument_type(self.NSUB)
         self.TIME_SIGNIFICANCE = time_significance(self.NSUB)
-        self.TP = time_period(self.HH24, self.W1_CALC, self.TPP, self.TMAX, self.TMIN)
+        self.TP = time_period(self.HH24, self.W1_CALC, self.SUND,
+                                self.TPP, self.TMAX, self.TMIN, self.GLOB)
         self.WW = weather(self.STATION_TYPE, 'WW_AWS', k_a, self.WW_CALC, self.WW_AWS)
         self.W1 = weather(self.STATION_TYPE, 'W1_AWS', k_a, self.W1_CALC, self.W1_AWS)
         self.W2 = weather(self.STATION_TYPE, 'W2_AWS', k_a, self.W2_CALC, self.W2_AWS)
@@ -287,9 +309,56 @@ class Subset:
 
 # 6.
 
+def get_wigos(wigos_id, key_id):
+    """
+    This function splits WIGOS identifier (wigos_id)from "-" to get a wigos_array with:
+        wigos_array[0] = WIGOS identifier series = WSI_IDS  (value between 0-14)
+        wigos_array[1] = WIGOS issuer of identifier = WSI_IDI
+            Value between 1 and 9 999 when no WMO number.
+            Value between 10 000 and 99 999 otherwise.
+        wigos_array[2] = WIGOS issue number = WSI_INR
+        wigos_array[3] = WIGOS local identifier (character) = WSI_LID
+            NSI number is used if WMO number is missing provided.
+    https://wiki.fmi.fi/pages/viewpage.action?pageId=107195152
+    """
+    wigos_term = []
+    for i in range(0, len(wigos_id)):
+        if wigos_id[i] != '-1e+100':
+            wigos_array = wigos_id[i].split('-')
+
+            if len(wigos_array)!= 4:
+                print('WIGOS identifier is wrongly written!\n')
+                sys.exit(1)
+            try:
+                wigos_array[0] = int(wigos_array[0])
+                wigos_array[1] = int(wigos_array[1])
+                wigos_array[2] = int(wigos_array[2])
+                if wigos_array[0] not in range(0, 15):
+                    print('WIGOS identifier series number should be in range (0, 14).\n')
+                    sys.exit(1)
+                elif wigos_array[1] not in range(1, 100000):
+                    print('WIGOS issuer of identifier number should be in range (1, 99 999).\n')
+                    sys.exit(1)
+                elif wigos_array[2] not in range(0, 100000):
+                    print('WIGOS issue number should be in range (0, 99 999.\n')
+                    sys.exit(1)
+                elif len(wigos_array[3])> 16:
+                    print('WIGOS local identifier should be 16 characters max.\n')
+                    sys.exit(1)
+                wigos_term.append(wigos_array[key_id])
+            except ValueError:
+                print('WIGOS identifier series, WIGOS issuer of identifier')
+                print('and WIGOS issuer number should be positive integers.\n')
+                sys.exit(1)
+        else:
+            wigos_array = [miss, miss, miss, '']
+            wigos_term.append(wigos_array[key_id])
+
+    return wigos_term
+
 def vertical_significance(n_list, nh_list, cl_list, cm_list):
     """
-    This function calculates the vertical significance for the sequence 302004. It depends on:
+    This function calculates vertical significance for sequence 302004. It depends on:
         n_list = N_CALC = cloud cover total
         nh_list = NH_CALC = cloud amount
         cl_list = CL = cloud type (low clouds)
@@ -315,18 +384,18 @@ def vertical_significance(n_list, nh_list, cl_list, cm_list):
 
 def vertical_significance_total(aws, del_list, vs_list , cla_list):
     """
-    This function makes a total list of the vertical significance in 307080:
-        302004: j = 0, values are made in the function vertical_significance = vs_list.
+    This function makes a total list of vertical significance in 307080:
+        302004: j = 0, values are made in function vertical_significance = vs_list.
         302005: j > 0 and j <= nr1, depends on:
-            del_list = DEL = delayed replication, which includes
-            nr1 = NR1 = number of repetitions of sequence 302005.
+            del_list = DEL = delayed replicatoin, which includes
+            nr1 = NR1 = number of repetitions of sequance 302005.
             aws = automatic station (=1) or manual station (=0)
             cla_list = [CLA2, CLA3, CLA4, CLA5] = cloud amount list in different layers.
         302036: nr1 < j <= nr2 depends on:
-            del_list = DEL = delayed replication which includes
-            nr2 = NR2 = number of repetitions of sequence 302036.
+            del_list = DEL = delayed replicatoin, which includes
+            nr2 = NR2 = number of repetitions of sequance 302036.
         302047: j > nr2, required from land stations mainly in the tropics.
-        8002: j > nr2 + 1, Set to be missing to cancel the previous value.
+        8002: j > nr2 + 1, Set to missing to cancel the previous value.
     """
     int_list = []
     list2 = cla_list[0]
@@ -337,8 +406,7 @@ def vertical_significance_total(aws, del_list, vs_list , cla_list):
     for i in range (0, len(vs_list)):
         nr1 = del_list[k]
         nr2 = del_list[k+1]
-        w = 5 + nr1 + nr2
-        for j in range(0, w):
+        for j in range(0, 5 + nr1 + nr2):
             if j == 0:
                 int_list.append(vs_list[i])
             elif 0 < j <= nr1:
@@ -362,12 +430,12 @@ def vertical_significance_total(aws, del_list, vs_list , cla_list):
 
 def cloud_amount(nr2_list, list1, cla_list):
     """
-    This function makes a total list of the cloud amount:
+    This funtion makes a total list of cloud amount:
         302004: j = 0. Depends on list1 = NH_CALC = cloud amount.
         302005: j = 1, 2, 3, 4. Depends on:
             cla_list = [CLA2, CLA3, CLA4, CLA5] = cloud amount list in different layers.
-        302036: j > 5. Number of the cloud amount depends on the
-            nr2_list = NR2 = number of repetitions of sequence 302036.
+        302036: j > 5. Number of cloud amount depends on the
+            nr2_list = NR2 = number of repetitions of sequance 302036.
     """
     int_list = []
     list2 = cla_list[0]
@@ -402,29 +470,29 @@ def cloud_amount(nr2_list, list1, cla_list):
                 int_list.append(miss)
     return int_list
 
-def value_for_cloud_type(x, y):
+def value_for_cloud_type(c_id, cloud_value ):
     """
-    This function gets the right value for the cloud type. x is the cloud type id:
-        for CL x = 30
-        for CM x = 20
-        for CH x = 10
-    y is either the data value of the cloud type (string) or the value of the cloud cover (integer).
+    This function gets right value for cloud type. c_id is the cloud type id:
+        for CL c_id = 30
+        for CM c_id = 20
+        for CH c_id = 10
+    cloud_value is either the data value of cloud type (string) or value of cloud cover (integer).
     """
-    value = int(y) + x
-    if y == 113:
-        if x == 30:
+    value = int(cloud_value ) + c_id
+    if cloud_value  == 113:
+        if c_id == 30:
             value = 62
-        elif x == 20:
+        elif c_id == 20:
             value = 61
-        elif x == 10:
+        elif c_id == 10:
             value = 60
-    elif int(y) == 10:
+    elif int(cloud_value ) == 10:
         value = 63
     return value
 
 def cloud_type(n_list, str_list, x):
     """
-    This function calculates the cloud type 20012 for the sequence 302004. It depends on:
+    This function calculates cloud type 20012 for sequence 302004. It depends on:
         n_list = N_CALC = cloud cover total
         str_list = values of cloud type
         x = id of cloud type
@@ -447,12 +515,12 @@ def cloud_type_total(del_list, cl_list, cm_list, ch_list):
         cm_list = CM = cloud type (middle cloud)
         ch_list = CH = cloud type (high cloud)
     302005: j > 2. Depends on:
-        del_list = DEL = delayed replication, which includes
-        nr1 = NR1 = number of repetitions of sequence 302005.
+        del_list = DEL = delayed replicatoin, which includes
+        nr1 = NR1 = number of repetitions of sequance 302005.
     302036: j > 2. Number of cloud types depends on the
-        del_list = DEL = delayed replication, which includes
-        nr2 = NR2 = number of repetitions of sequence 302036.
-    302048: given if the value of the cloud type is given for the cloud elevation
+        del_list = DEL = delayed replicatoin, which includes
+        nr2 = NR2 = number of repetitions of sequance 302036.
+    302048: given if value of cloud type is given for cloud elevation
     """
     int_list = []
     m = 0
@@ -472,9 +540,9 @@ def cloud_type_total(del_list, cl_list, cm_list, ch_list):
         m = m + 2
     return int_list
 
-def number_of_repetition(cla_list):
+def number_of_repetition1(cla_list):
     """
-    Number of repetitions in sequence 302005. Depends on:
+    Number of repetition in sequance 302005. Depends on:
         cla_list = [CLA2, CLA3, CLA4, CLA5] = cloud amount list in different layers.
     """
     list2 = cla_list[0]
@@ -500,7 +568,7 @@ def number_of_repetition(cla_list):
 
 def str2int_cloud_amount(n_list, str_list, x):
     """
-    Function converts the cloud amount data from string to integer.
+    Function converts cloud amount data from string to integer.
         302004: x = 28, the integer value depends on:
             n_list = N_CALC = cloud cover total
             str_list = values in data
@@ -531,7 +599,7 @@ def str2int_cloud_amount(n_list, str_list, x):
 
 def value_for_height_of_base(h_value, c_value):
     """
-    Function chooses value for the height of base. Depends on:
+    Funciton chooses value for height of base. Depends on:
         h_value = value of height of base
         c_value = value of cloud amount.
     """
@@ -548,7 +616,7 @@ def height_of_base(n_list, nr1_list, cla_list, hb_list):
             n_list = N_CALC = cloud cover total
             hb_list[0] = HB[0] = NH_CALC ) height of base data.
         302005: j >= 1. Depends on:
-            nr1_list = NR1 = number of repetitions of the sequence 302005.
+            nr1_list = NR1 = number of repetition of sequence 302005.
             cla_list = [CLA2, CLA3, CLA4, CLA5] = cloud amount list in
                 different layers.
             rest of hb_list = [CLHB2, CLHB3, CLHB4, CLHB5] = height of base
@@ -627,7 +695,7 @@ def r24h_total(hh_list, r24h_list):
 
 def ground_data(key_list, hh_list, list1, list2):
     """
-    This function chooses ground data from GROUND06 and GROUND and modifies it.
+    This function chooses ground data from GROUND06 and GROUND, and modifies it.
         If key_list includes key "GROUND06" and hh_list = HH24 is 6, the values of
         GROUND06 (list2) are used. If not, then values of GROUND (list1) are used.
     """
@@ -687,10 +755,10 @@ def snow_depth_total(hh_list, key_list, gr_list, snow_list):
 def replication(ns, nr1_list, nr2_list):
     """
     Functions combines the 2 replications, which are used to make
-    the array for delayed replication. It depends on:
+    the array for delaid replication. It depends on:
         ns = NSUB = number of subsets
-        nr1_list = NR1 = number of replications in the sequence 302005
-        nr2_list = NR2 = number of replications in the sequence 302036
+        nr1_list = NR1 = number of replication in sequence 302005
+        nr2_list = NR2 = number of replication in sequence 302036
     """
     int_list = []
     for i in range(0, ns):
@@ -703,10 +771,10 @@ def precipitation_total(st_list, r_h_list):
     Function makes a total list of precipitation 13011: It depends on:
         st_list = STATION_TYPE = tells if the station is automatic of not.
         r_h_list = [R_1H_AWS, R_1H_MAN, R_12H_AWS, R_12H_MAN]
-            r12hm_list = R_12H_MAN = precipitation past 12 hours in manual station
-            r1hm_list = R_1H_MAN = precipitation past 1 hour in manual station
-            r12ha_list = R_12H_AWS = precipitation past 12 hours in automatic station
-            r1ha_list = R_1H_AWS = precipitation past 1 hour in automatic station
+            r12hm_list = R_12H_MAN = Precipitation past 12 hours in manual station
+            r1hm_list = R_1H_MAN = Precipitation past 1 hour in manual station
+            r12ha_list = R_12H_AWS = Precipitation past 12 hours in automatic station
+            r1ha_list = R_1H_AWS = Precipitation past 1 hour in automatic station
     """
     float_list = []
     r1ha_list = r_h_list[0]
@@ -724,7 +792,7 @@ def precipitation_total(st_list, r_h_list):
 
 def temperature(hh_list, t1_list, t2_list):
     """
-    This function is used to choose the right values for temperature. It depends on:
+    This function is used to choose right values for temperature. It depends on:
         hh_list = HH24 = hour of measurement
         t1_list = TMAX06 or TMIN06
         t2_list = TMAX18 or TMIN18
@@ -741,7 +809,7 @@ def temperature(hh_list, t1_list, t2_list):
 
 def number_of_repetition2(ns):
     """
-    This function gives delayed repetition for 302036.
+    This function gives delaid repetition for 302036.
     """
     int_list = []
     i = 0
@@ -750,9 +818,51 @@ def number_of_repetition2(ns):
         i = i + 1
     return int_list
 
+def sunshine(ss_list, ns):
+    """
+    This function chances sunshine data from hour units to minutes.
+    The first replication is from last 1 hour period,
+    and the second replication is from the last 24 hour period.
+    """
+    sund_list = []
+    i = 0
+    while i < ns:
+        if ss_list[i] == miss:
+            sund_list.append(miss)
+        elif ss_list[i] >= 0 and ss_list[i] < 2048:
+            sund_list.append(ss_list[i])
+        else:
+            sund_list.append(miss)
+            print("Wrong SUND value: " + str(ss_list[i]) + " (min=0, max=2047)")
+        sund_list.append(miss)
+        i = i + 1
+    return sund_list
+
+def global_radiation(float_list, ns):
+    """
+    This function chances global radiation units from kJ/m² -> J/m².
+    The first replication is from last 1 hour period,
+    and the second replication is from the last 24 hour period.
+
+    """
+    glob_list = []
+    i = 0
+    while i < ns:
+        if float_list[i] == missD:
+            glob_list.append(missD)
+        else:
+            if float_list[i] >= 0.0 and float_list[i] < 1.04858e+05:
+                glob_list.append(float_list[i] * 1000.0)
+            else:
+                glob_list.append(missD)
+                print("Wrong GLOB value: " + str(float_list[i]) + " (min=0, max=1.04858e+08)")
+        glob_list.append(missD)
+        i = i + 1
+    return glob_list
+
 def precipitation_time_period(precipitation_list):
     """
-    This function gives the time period values for the precipitation. It depends on:
+    This function gives time period values for precipitation. It depends on:
         precipitation_list = PRECIPITATION = total list of precipitation.
     """
     int_list = []
@@ -767,9 +877,9 @@ def precipitation_time_period(precipitation_list):
 
 def past_weather_time_period(w1, hh):
     """
-    This function returns the time period in the sequence 302038. It depends on:
+    This function retuns time period in sequance 302038. It depends on:
         w1 = W1 = past weather 1
-        hh = HH24 = hour of measurement
+        hh = HH24 = hour of measusrement
     """
     value = miss
     h = [0, 5, 6, 11, 12, 17, 18, 23]
@@ -780,36 +890,39 @@ def past_weather_time_period(w1, hh):
             value = -3
     return value
 
-def temperature_time_period(x, tmax, tmin):
+def temperature_time_period(t_id, tmax, tmin):
     """
-    This function gives the time period values for the sequence 302041. It depends on:
-        x = id of time period
+    This function gives time period values for sequance 302041. It depends on:
+        t_id = id of time preriod
         tmax = value of maximum temperature
         tmin = value of minimum temperature
     """
-    if x == 5 and tmax == missD:
+    if t_id == 5 and tmax == missD:
         value = miss
-    elif x == 7 and tmin == missD:
+    elif t_id == 7 and tmin == missD:
         value = miss
-    elif x in (5, 7):
+    elif t_id in (5, 7):
         value = -12
-    elif x == 6 and tmax == missD:
+    elif t_id == 6 and tmax == missD:
         value = miss
-    elif x == 8 and tmin == missD:
+    elif t_id == 8 and tmin == missD:
         value = miss
-    elif x in (6, 8):
+    elif t_id in (6, 8):
         value = 0
     else:
         value = miss
     return value
 
-def time_period(hh_list, w1_list, tp_list, tmax_list, tmin_list):
+def time_period(hh_list, w1_list, sund_list, tp_list, tmax_list, tmin_list, glob_list):
     """
     This function gives all the time period values. It depends on:
         302038 [h] j = 0
             hh_list = HH24 = hour of measurement
             w1_list = W1_CALC = past weather 1
         302039 [h] j = 1 and 2
+            sund_list = SUND = sunshine time [min]
+            The first replication is from 1 hour period,
+            and the second replication is form 24 hour period.
         302040 [h] j = 3 and 4
             tp_list = PRECIPITATION_TIME_PERIOD = time period for precipitation
         302041 [h] j = 5, 6, 7 and 8
@@ -818,30 +931,46 @@ def time_period(hh_list, w1_list, tp_list, tmax_list, tmin_list):
         302042 [min] j = 9, 10 and 11
         302044 [h] j = 12
         302045 [h] j = 13 and 14
+            glob_list = GLOB = global radiation [J/m²]
+            The first replication is from 1 hour period,
+            and the second replication is form 24 hour period.
         302046 [h] j = 15 and 16
     """
     int_list = []
     t = 0
+    s = 0
+    g = 0
     for i in range (0, len(hh_list)):
-        tmax = tmax_list[i]
-        tmin = tmin_list[i]
         for j in range (0, 17):
+            value = miss
             if j == 0:
-                int_list.append(past_weather_time_period(w1_list[i], hh_list[i]))
-            elif j in (9, 10):
-                int_list.append(-10)
-            elif j == 11:
-                int_list.append(-60)
-            elif j == 3:
-                int_list.append(tp_list[t])
+                value = past_weather_time_period(w1_list[i], hh_list[i])
+            elif j == 1:
+                if sund_list[s] != miss:
+                    value = -1
+                s = s + 1
+            elif j == 2:
+                if sund_list[s] != miss:
+                    value = -24
+                s = s + 1
+            elif j in (3, 4):
+                value = tp_list[t]
                 t = t + 1
             elif 5 <= j <= 8:
-                int_list.append(temperature_time_period(j, tmax, tmin))
-            elif j == 4:
-                int_list.append(tp_list[t])
-                t = t + 1
-            else:
-                int_list.append(miss)
+                value = temperature_time_period(j, tmax_list[i], tmin_list[i])
+            elif j in (9, 10):
+                value = -10
+            elif j == 11:
+                value = -60
+            elif j == 13:
+                if glob_list[g] != missD:
+                    value = -1
+                g = g + 1
+            elif j == 14:
+                if glob_list[g] != missD:
+                    value = -24
+                g = g + 1
+            int_list.append(value)
     return int_list
 
 def instrument_type(ns):
@@ -871,7 +1000,7 @@ def time_significance(ns):
 
 def weather(st_list, name, key_list, man_list, aws_list):
     """
-    Function chooses values for present and past weather. The values are chosen between
+    Function chooses values for present and past weather. Values are chosen between
     manual (man_list) and automatic (aws_list) observations. It depends on:
         st_list = STATION_TYPE
         key_list, if key name (name) is in the data.
@@ -914,7 +1043,7 @@ def wind_gust_speed(list1, list2):
 
 def precipitation(str_value):
     """
-    Function returns a value for precipitation. It depends on str_value = given data value.
+    Function retuns value for precipitation. It depends on str_value = given data value.
     """
     value = str_value
     if str_value == '0':
@@ -923,76 +1052,81 @@ def precipitation(str_value):
         value = '0.0'
     return float(value)
 
-def make_missing(x):
+def make_missing(k_id):
     """
-    This function gives the right missing values according to the value's id (x).
+    This function gives right missing values according to value's id (k_id)
     """
     value = miss
-    if 22 <= x <= 23:
+    if 22 <= k_id <= 23:
         value = 31
-    elif x == 31:
+    elif k_id == 31:
         value = 15
-    elif 54 <= x <= 55:
+    elif 54 <= k_id <= 55:
         value = 31
-    elif x == 62:
+    elif k_id == 62:
         value = 511
-    elif x == 64:
+    elif k_id == 64:
         value = 2
-    elif x == 65:
+    elif k_id == 65:
         value = 761
     return value
 
-def not_missing(str_value, x):
+def not_missing(str_value, k_id):
     """
-    Function gives the right values according to given value (str_value) and its id (x).
+    Function gives right values according to given value (str_value) and its id (k_id).
     """
     value = int(str_value)
-    if x == 29:
+    if k_id == 29:
         value = int(value*12.5 + 0.5)
-    elif x == 53 and value > 81900:
+    elif k_id == 53 and value > 81900:
         value = 81900
-    elif x == 64:
+    elif k_id == 64:
         value = int(str_value[:2])
-    elif x == 65:
+    elif k_id == 65:
         value = int(str_value[-3:])
     return value
 
-def str2int(str_list, x):
+def str2int(str_list, k_id):
     """
     This function makes a string list (str_list) to a integer list (int_list).
-        x represents the id of the different values. The values are converted from string to
-        integer depending on the x. Before this function, missing values = '/' are changed
+        k_id represents the id of different values. Values are converted from string to
+        integer depending on k_id. Before this function, missing values = '/' are changed
         to be '-1e+100', which in eccodes is the missing value of float type value.
         It is changed to be missing value of integer type value.
     """
     int_list = []
     for i in range (0, len(str_list)):
         if str_list[i] == '-1e+100':
-            int_list.append(make_missing(x))
+            int_list.append(make_missing(k_id))
         else:
-            int_list.append(not_missing(str_list[i], x))
+            int_list.append(not_missing(str_list[i], k_id))
     return int_list
 
-def str2float(str_list, x):
+def str2float(str_list, k_id):
     """
     This function makes a string list (str_list) to a float list (float_list).
-        x represents the id of the different values. The values are converted from string to
-        float depending on the x. Before this function, missing values = '/' are changed
+        k_id represents the id of different values. Values are converted from string to
+        float depending on k_id. Before this function, missing values = '/' are changed
         to be '-1e+100' which in eccodes is the missing value of float type value.
     """
     float_list = []
     for i in range (0, len(str_list)):
-        if str_list[i] == '-1e+100':
+        if str_list[i] == '-1e+100' and k_id != 42:
             float_list.append(float(str_list[i]))
-        elif x == 4 and 1.5 <= float(str_list[i]) < 3.0:
+        elif k_id == 4 and 1.5 <= float(str_list[i]) < 3.0:
             float_list.append(2.00)
-        elif x == 34:
+        elif k_id == 34:
             float_list.append(float(str_list[i]) * 100)
-        elif x == 40:
+        elif k_id == 40:
             float_list.append(precipitation(str_list[i]))
-        elif x == 41:
+        elif k_id == 41:
             float_list.append(float(str_list[i]) * 0.010)
-        elif x == 50:
+        elif k_id == 42:
+            if str_list[i] == miss or str_list[i] == '-1e+100':
+                float_list.append(miss)
+            else:
+                float_list.append(float(str_list[i]) * 60.0)
+        elif k_id == 50:
             float_list.append(float(str_list[i]) + 273.15)
         else:
             float_list.append(float(str_list[i]))
