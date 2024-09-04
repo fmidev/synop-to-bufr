@@ -2,7 +2,7 @@
 
 %define PACKAGENAME synop-to-bufr
 Name:           %{PACKAGENAME}
-Version:        22.2.2
+Version:        24.9.4
 Release:        1%{dist}.fmi
 Summary:        synop2bufr application
 Group:          Applications/System
@@ -11,12 +11,8 @@ URL:            http://www.fmi.fi
 Source0: 	%{name}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Requires:       python3
-
-%if %{defined el8}
-Requires:	python3-numpy
-%else if %{defined el7}
-Requires:	python36-numpy
-%endif
+Requires:       eccodes >= 2.33.0
+Requires:       python3-numpy
 
 Provides:	synop2bufr.py
 
@@ -48,5 +44,7 @@ rm -rf %{buildroot}
 %{_bindir}/synop2bufr.py
 
 %changelog
+* Wed Sep  4 2024 Tytti Mustonen <tytti.mustonen@fmi.fi> - 24.9.4-1.fmi
+- New verion
 * Wed Feb  2 2022 Mikko Partio <mikko.partio@fmi.fi> - 22.2.2-1.fmi
 - Initial build
