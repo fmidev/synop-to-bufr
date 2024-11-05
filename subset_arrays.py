@@ -1065,10 +1065,6 @@ def make_missing(k_id):
         value = 31
     elif k_id == 62:
         value = 511
-    elif k_id == 64:
-        value = 2
-    elif k_id == 65:
-        value = 761
     return value
 
 def not_missing(str_value, k_id):

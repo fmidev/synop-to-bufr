@@ -2,7 +2,7 @@
 
 %define PACKAGENAME synop-to-bufr
 Name:           %{PACKAGENAME}
-Version:        24.9.4
+Version:        24.11.5
 Release:        1%{dist}.fmi
 Summary:        synop2bufr application
 Group:          Applications/System
@@ -44,6 +44,8 @@ rm -rf %{buildroot}
 %{_bindir}/synop2bufr.py
 
 %changelog
+* Tue Nov  5 2024 Arto Keskinen <arto.keskinen@fmi.fi> - 24.11.5-1.fmi
+- set miss (CODES_MISSING_LONG) for missing WMON 
 * Wed Sep  4 2024 Tytti Mustonen <tytti.mustonen@fmi.fi> - 24.9.4-1.fmi
 - New verion
 * Wed Feb  2 2022 Mikko Partio <mikko.partio@fmi.fi> - 22.2.2-1.fmi
